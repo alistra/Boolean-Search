@@ -3,6 +3,7 @@
 import os
 import re
 import time
+import marshal
 
 class Indexer:
     morphologic = {}
@@ -19,6 +20,14 @@ class Indexer:
         if not os.path.isdir('./' + dirname + '/'):
             os.mkdir('./' + dirname + '/')
         return dirname
+
+    def load_morphologic(self, filename):
+        f = open(filename, 'r')
+        self.morphologic = marshal.load(f)
+
+    def dump_morphologic(self, filename):
+        f = open(filename, 'w')
+        marshal.dump(self.morphologic, f, 2)
 
     def initialize_morphologic(self, filename):
         filehandle = open(filename)
@@ -68,10 +77,12 @@ if __name__ == "__main__":
     print 'initializing morphologic...',
     sys.stdout.flush()
     indexer.initialize_morphologic('../morfologik_do_wyszukiwarek.txt')
+    #indexer.load_morphologic('morphologic.pickle')
     print 'ok'
 
-    print 'indexing...',
-    sys.stdout.flush()
-    indexer.index_documents('../wikipedia_dla_wyszukiwarek.txt')
+    #indexer.dump_morphologic('morphologic.pickle')
+    #print 'indexing...',
+    #sys.stdout.flush()
+    #indexer.index_documents('../wikipedia_dla_wyszukiwarek.txt')
     #indexer.index_documents('test.txt')
-    print 'ok'
+    #print 'ok'
