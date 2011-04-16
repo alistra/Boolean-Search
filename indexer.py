@@ -1,63 +1,77 @@
-#!/usr/bin/python3.1
+#!/usr/bin/python
+
 import os
 import re
 import time
 
-def create_index_directory(compressed, stemmed):
-    dirname = 'index'
-    
-    if compressed or stemmed:
-        dirname = dirname + '_'
-        if compressed: dirname = dirname + 'C' 
-        if stemmed: dirname = dirname + 'S'
+class Indexer:
+    morphologic = {}
 
-    if not os.path.isdir('./' + dirname + '/'):
-        os.mkdir('./' + dirname + '/')
-    return dirname
+    def __init__(self, index_dir = "index", compressed = False, stemmed = False):
+        self.index_dir = self.create_index_directory(index_dir, compressed, stemmed)
 
-def initialize_morfologik(filename):
-    m = dict()
+    def create_index_directory(self, dirname, compressed, stemmed):
+        if compressed or stemmed:
+            dirname = dirname + '_'
+            if compressed: dirname = dirname + 'C' 
+            if stemmed: dirname = dirname + 'S'
 
-    filehandle = open(filename)
-    for line in filehandle:
-        linewords = line.split()
-        m[linewords[0]] = linewords[1:]
+        if not os.path.isdir('./' + dirname + '/'):
+            os.mkdir('./' + dirname + '/')
+        return dirname
 
-    return m
+    def initialize_morphologic(self, filename):
+        filehandle = open(filename)
+        for line in filehandle:
+            forms = line.split(' ')
+            word = forms[0]
+            self.morphologic[word] = forms[1:]
 
-def generate_index(filename, compressed = False, stemmed = False):
-    dirname = create_index_directory(compressed, stemmed)
-    m = initialize_morfologik('morfologik_do_wyszukiwarek.txt')
-    t = open('./' + dirname + '/TITLES','w') #what if already exists
-    document_count = 0
+    def index_documents(self, filename):
+        t = open('./' + self.index_dir + '/TITLES','w') #what if already exists
+        document_count = 0
 
-    filehandle = open(filename)
-    for line in filehandle:
-        m = re.search(r'##TITLE## (\w+)', line)
-        if m:
-            document_count += 1
-            t.write(str(document_count) + ' ' + m.group(1) + '\n' )
+        filehandle = open(filename)
+        for line in filehandle:
+            m = re.search(r'^##TITLE## (.*)$', line)
+            if m:
+                document_count += 1
+                t.write(str(document_count) + ' ' + m.group(1) + '\n' )
+            else:
+                pass
+                #for word in re.findall(r'\w+', line):
+                #    print(word + " " + str(normalize(word, m, stemmed)))
+        
+        t.close()
+
+    def normalize(w, stemmed):
+        w = w.lower()
+ 
+        if w in self.morphologic:
+            lemated = self.morphologic[w] 
         else:
-            for word in re.findall(r'\w+', line):
-                print(word + " " + str(normalize(word, m, stemmed)))
-    
-    t.close()
+            lemated = [w]
 
-def normalize(w, m, stemmed):
-    w = w.lower()
-    try:
-        print(w)
-        res = m[w] 
-    except TypeError:
-        res = [w]
-    except KeyError:
-        res = [w]
-    if stemmed:
-        return stem(res)
-    else:
-        return res
+        if stemmed:
+            return [stem(w) for w in lemated]
+        else:
+            return lemated
 
-def stem(w): #stub
-    return w
+    def stem(w): #stub
+        return w
 
-generate_index('wikipedia_dla_wyszukiwarek.txt')
+import sys
+
+if __name__ == "__main__":
+    indexer = Indexer()
+
+    print 'initializing morphologic...',
+    sys.stdout.flush()
+    indexer.initialize_morphologic('../morfologik_do_wyszukiwarek.txt')
+    print 'ok'
+
+    print 'indexing...',
+    sys.stdout.flush()
+    indexer.index_documents('../wikipedia_dla_wyszukiwarek.txt')
+    #indexer.index_documents('test.txt')
+    print 'ok'
