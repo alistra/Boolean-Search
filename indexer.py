@@ -22,11 +22,11 @@ class Indexer:
         return dirname
 
     def load_morphologic(self, filename):
-        f = open(filename, 'r')
+        f = open(filename, 'rb')
         self.morphologic = marshal.load(f)
 
     def dump_morphologic(self, filename):
-        f = open(filename, 'w')
+        f = open(filename, 'wb')
         marshal.dump(self.morphologic, f, 2)
 
     def initialize_morphologic(self, filename):
