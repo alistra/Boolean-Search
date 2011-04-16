@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import os
 import re
@@ -65,13 +65,13 @@ import sys
 if __name__ == "__main__":
     indexer = Indexer()
 
-    print 'initializing morphologic...',
+    print('initializing morphologic...',)
     sys.stdout.flush()
-    indexer.initialize_morphologic('../morfologik_do_wyszukiwarek.txt')
-    print 'ok'
+    indexer.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt')
+    print ('ok')
 
-    print 'indexing...',
+    print ('indexing...',)
     sys.stdout.flush()
-    indexer.index_documents('../wikipedia_dla_wyszukiwarek.txt')
+    indexer.index_documents('data/wikipedia_dla_wyszukiwarek.txt')
     #indexer.index_documents('test.txt')
-    print 'ok'
+    print ('ok')
