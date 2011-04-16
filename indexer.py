@@ -74,7 +74,7 @@ import sys
 if __name__ == "__main__":
     indexer = Indexer()
 
-    print('initializing morphologic...',)
+    print('initializing morphologic...', end="")
     sys.stdout.flush()
     indexer.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt')
     #indexer.load_morphologic('morphologic.pickle')
