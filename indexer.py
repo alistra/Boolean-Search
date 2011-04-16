@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.1
 
 import os
 import re
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     sys.stdout.flush()
     indexer.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt')
     #indexer.load_morphologic('morphologic.pickle')
-    print 'ok'
+    print('ok')
 
     #indexer.dump_morphologic('morphologic.pickle')
     #print ('indexing...',)
