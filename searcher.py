@@ -25,11 +25,9 @@ class Query:
             raise EmptyQuery()
 
     def parse_cnf(self, cnf):
-        self.clauses = []
         self.type = "cnf"
-        for clause in cnf.split(' '):
-            if clause != '':
-                self.clauses.append(clause.split('|'))
+        self.clauses = [clause.split('|') for clause in cnf.split(' ') 
+                if clause != '']
 
 class QueryTest(unittest.TestCase):
     def test_phrase(self):
