@@ -53,52 +53,98 @@ class Searcher:
 
         results = clause_results[0]
         for clause_result in clause_results[1:]:
-            if results.negation:
-                if clause_result.negation:
-                    # ~x & ~y  ->  ~(D(x) + D(y))
-                    results.docs |= clause_result.docs
-                else:
-                    # ~x & y  -> D(y) \ D(x)
-                    results.docs = clause_result.docs - results.docs
-                    results.negation = False
-            else:
-                if clause_result.negation:
-                    # x & ~y  ->  D(x) \ D(y)
-                    results.docs -= clause_result.docs
-                else:
-                    # x & y  -> D(y) & D(x)
-                    results.docs &= clause_result.docs
-
+            results = self.merge_and(results, clause_result)
         return results
       
     def search_clause(self, clause):
         term_results = [self.search_term(term) for term in clause]
         results = term_results[0]
         for term_result in term_results[1:]:
-            if results.negation:
-                if term_result.negation:
-                    # ~x | ~y  ->  ~(D(x) & D(y))
-                    results.docs &= term_result.docs
-                else:
-                    # ~x | y  -> ~(D(x) \ D(y))
-                    results.docs -= term_result.docs
-            else:
-                if term_result.negation:
-                    # x | ~y  ->  ~(D(y) \ D(x))
-                    results.docs = term_result.docs - results.docs
-                    results.negation = True
-                else:
-                    # x | y  -> D(y) + D(x)
-                    results.docs |= term_result.docs
-
+            results = self.merge_or(results, term_result)
         return results
-
 
     def search_term(self, term):
         if term[0] == '~':
-            return SearchResult(set(self.indexer.docs(term[1:])), True)
+            return SearchResult(self.indexer.docs(term[1:]), True)
         else:
-            return SearchResult(set(self.indexer.docs(term)), False)
+            return SearchResult(self.indexer.docs(term), False)
+
+    def merge_or(self, res1, res2):
+        """Merges with OR two search results in O(m + n) time."""
+        if res1.negation and res2.negation:
+            # ~x | ~y  <=>  ~(x & y)
+            res1.negation = res2.negation = False
+            res = self.merge_and(res1, res2)
+            res.negation = True
+            return res
+        elif res1.negation:
+            # ~x | y  <=>  ~(x \ y)
+            return SearchResult(self.substract(res1.docs, res2.docs), True)
+        elif res2.negation:
+            # x | ~y  <=>  ~(y \ x)
+            return SearchResult(self.substract(res2.docs, res1.docs), True)
+        else:
+            # x | y
+            d1 = res1.docs
+            d2 = res2.docs
+            res = []
+            while d1 != [] and d2 != []:
+                if d1[0] < d2[0]:
+                    res.append(d1[0])
+                    d1.pop(0)
+                elif d1[0] > d2[0]:
+                    res.append(d2[0])
+                    d2.pop(0)
+                else:
+                    res.append(d1[0])
+                    d1.pop(0)
+                    d2.pop(0)
+            return SearchResult(res + d1 + d2, False)
+
+    def merge_and(self, res1, res2):
+        """Merges with AND two search results in O(m + n) time."""
+        if res1.negation and res2.negation:
+            # ~x & ~y  <=>  ~(x | y)
+            res1.negation = res2.negation = False
+            res = self.merge_or(res1, res2)
+            res.negation = True
+            return res
+        elif res1.negation:
+            # ~x & y  <=> y \ x
+            return SearchResult(self.substract(res2.docs, res1.docs), False)
+        elif res2.negation:
+            # x & ~y  <=> x \ y
+            return SearchResult(self.substract(res1.docs, res2.docs), False)
+        else:
+            # x & y
+            d1 = res1.docs
+            d2 = res2.docs
+            res = []
+            while d1 != [] and d2 != []:
+                if d1[0] < d2[0]:
+                    d1.pop(0)
+                elif d1[0] > d2[0]:
+                    d2.pop(0)
+                else:
+                    res.append(d1[0])
+                    d1.pop(0)
+                    d2.pop(0)
+            return SearchResult(res, False)
+
+    def substract(self, d1, d2):
+        """Substracts two lists in O(m + n) time."""
+        # x \ y
+        res = []
+        while d1 != [] and d2 != []:
+            if d1[0] < d2[0]:
+                res.append(d1[0])
+                d1.pop(0)
+            elif d1[0] > d2[0]:
+                d2.pop(0)
+            else:
+                d1.pop(0)
+                d2.pop(0)
+        return res + d1
 
 class QueryTest(unittest.TestCase):
     def test_phrase(self):
@@ -158,52 +204,52 @@ class SearcherTest(unittest.TestCase):
 
     def test_single(self):
         res = self.searcher.search(Query('foo'))
-        self.assertEqual(res.docs, set(self.docs['foo']))
+        self.assertEqual(res.docs, self.docs['foo'])
         self.assertEqual(res.negation, False)
 
     def test_single_negation(self):
         res = self.searcher.search(Query('~foo'))
-        self.assertEqual(res.docs, set(self.docs['foo']))
+        self.assertEqual(res.docs, self.docs['foo'])
         self.assertEqual(res.negation, True)
 
     def test_plain_and(self):
         res = self.searcher.search(Query('foo bar baz'))
-        self.assertEqual(res.docs, {2})
+        self.assertEqual(res.docs, [2])
         self.assertEqual(res.negation, False)
 
     def test_plain_and_negation(self):
         res = self.searcher.search(Query('foo ~bar baz'))
-        self.assertEqual(res.docs, {1})
+        self.assertEqual(res.docs, [1])
         self.assertEqual(res.negation, False)
 
     def test_plain_and_negation2(self):
         res = self.searcher.search(Query('~foo ~bar'))
-        self.assertEqual(res.docs, set(self.docs['foo']) | set(self.docs['bar']))
+        self.assertEqual(res.docs, [1, 2, 3, 4, 5, 7, 8, 9])
         self.assertEqual(res.negation, True)
 
     def test_plain_or(self):
         res = self.searcher.search(Query('foo|alone'))
-        self.assertEqual(res.docs, set(self.docs['foo']) | set(self.docs['alone']))
+        self.assertEqual(res.docs, [1, 2, 3, 4, 5, 6, 10])
         self.assertEqual(res.negation, False)
 
     def test_plain_of_negation(self):
         res = self.searcher.search(Query('~foo|bar'))
-        self.assertEqual(res.docs, set(self.docs['foo']) - set(self.docs['bar']))
+        self.assertEqual(res.docs, [1, 4, 5])
         self.assertEqual(res.negation, True)
 
     def test_plain_of_negation2(self):
         res = self.searcher.search(Query('~foo|~alone'))
-        self.assertEqual(res.docs, set(self.docs['foo']) & set(self.docs['alone']))
+        self.assertEqual(res.docs, [])
         self.assertEqual(res.negation, True)
 
     def test_empty_intersection(self):
         res = self.searcher.search(Query('bar|~baz foo|baz alone'))
-        self.assertEqual(res.docs, set())
+        self.assertEqual(res.docs, [])
         self.assertEqual(res.negation, False)
 
     def test_universum(self):
         res = self.searcher.search(Query('~foo|~alone|~bar|~baz'))
-        self.assertEqual(res.docs, set([]))
+        self.assertEqual(res.docs, [])
         self.assertEqual(res.negation, True)
 
 if __name__ == "__main__":
