@@ -48,7 +48,7 @@ class Indexer:
         filehandle = open(filename)
         for line in filehandle:
             if line[:9] == '##TITLE##':
-                if document_count % 100 == 0:
+                if document_count % 500 == 0:
                     print('indexed ', document_count)
                     sys.stdout.flush()
                 document_count += 1
@@ -66,8 +66,8 @@ class Indexer:
                         else:
                             path = os.path.join(self.index_dir, 'SHORT') 
 
-                        indexfilehandle = open(path, 'a') 
-                        indexfilehandle.write(base + ' ' + str(document_count) + '\n')
+                        #indexfilehandle = open(path, 'a') 
+                        #indexfilehandle.write(base + ' ' + str(document_count) + '\n')
 
     def generate_dicts(self):
         for i, filename in enumerate(os.listdir(self.index_dir)):
@@ -119,13 +119,16 @@ class Indexer:
             filename = os.path.join(self.index_dir, 'SHORT.marshal')
         else:
             filename = os.path.join(self.index_dir, s[:3] + '.marshal')
-        d = self.load_dict(filename)
-        forms = self.normalize(s)
-        res = []
-        for form in forms:
-            if form in d:
-                res += d[form]
-        return [int(x) for x in sorted(res)]
+        if os.path.exists(filename):
+            d = self.load_dict(filename)
+            forms = self.normalize(s)
+            res = []
+            for form in forms:
+                if form in d:
+                    res += d[form]
+            return [int(x) for x in sorted(res)]
+        else:
+            return []
 
 import sys
 
