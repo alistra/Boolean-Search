@@ -66,8 +66,8 @@ class Indexer:
                         else:
                             path = os.path.join(self.index_dir, 'SHORT') 
 
-                        #indexfilehandle = open(path, 'a') 
-                        #indexfilehandle.write(base + ' ' + str(document_count) + '\n')
+                        indexfilehandle = open(path, 'a') 
+                        indexfilehandle.write(base + ' ' + str(document_count) + '\n')
 
     def generate_dicts(self):
         for i, filename in enumerate(os.listdir(self.index_dir)):
@@ -115,20 +115,18 @@ class Indexer:
         return w
 
     def get_posting(self, s):
-        if len(s) < 3:
-            filename = os.path.join(self.index_dir, 'SHORT.marshal')
-        else:
-            filename = os.path.join(self.index_dir, s[:3] + '.marshal')
-        if os.path.exists(filename):
-            d = self.load_dict(filename)
-            forms = self.normalize(s)
-            res = []
-            for form in forms:
+        forms = self.normalize(s)
+        res = []
+        for form in forms:
+            if len(form) < 3:
+                filename = os.path.join(self.index_dir, 'SHORT.marshal')
+            else:
+                filename = os.path.join(self.index_dir, form[:3] + '.marshal')
+            if os.path.exists(filename):
+                d = self.load_dict(filename)
                 if form in d:
                     res += d[form]
-            return [int(x) for x in sorted(res)]
-        else:
-            return []
+        return [int(x) for x in sorted(res)]
 
 import sys
 
