@@ -69,6 +69,9 @@ class Indexer:
 
     def generate_dicts(self):
         for i, filename in enumerate(os.listdir(self.index_dir)):
+            if os.path.exists(os.path.join(self.index_dir, filename + '.marshal')) or filename[-8:] == '.marshal':
+                continue
+
             if i % 1000 == 0:
                 print('generated ', i)
                 sys.stdout.flush()
@@ -76,7 +79,9 @@ class Indexer:
             fh = open(os.path.join(self.index_dir, filename))
             index_dict = {}
             for line in fh:
-                [key, value] = line.split()
+                w = line.split()
+                key = w[0]
+                value = " ".join(w[1:])
                 value = value.rstrip()
                 if key in index_dict and index_dict[key][-1] != value:
                     index_dict[key].append(value)
@@ -108,6 +113,8 @@ class Indexer:
     def stem(w): #stub
         return w
 
+
+
 import sys
 
 if __name__ == "__main__":
@@ -123,7 +130,7 @@ if __name__ == "__main__":
     #indexer.index_documents('data/wikipedia_dla_wyszukiwarek.txt')
     #print('ok')
 
-    print('generating dictionaries...')
-    sys.stdout.flush()
-    indexer.generate_dicts()
-    print('ok')
+    #print('generating dictionaries...')
+    #sys.stdout.flush()
+    #indexer.generate_dicts()
+    #print('ok')
