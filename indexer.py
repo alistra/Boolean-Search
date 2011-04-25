@@ -24,7 +24,7 @@ class Indexer:
 
     def initialize_morphologic(self, filename, cachefile):
         if os.path.exists(cachefile):
-            Indexer.load_dict(cachefile)
+            self.load_dict(cachefile)
     
         if self.morphologic == {}:
             filehandle = open(filename)
@@ -32,7 +32,7 @@ class Indexer:
                 forms = line.split(' ')
                 forms[-1] = forms[-1].rstrip()
                 self.morphologic[forms[0]] = forms[1:]
-            Indexer.dump_dict(self.morphologic, cachefile)
+            self.dump_dict(self.morphologic, cachefile)
 
     def index_documents(self, filename):
         title_path = os.path.join(self.index_dir, 'TITLES')
@@ -48,7 +48,7 @@ class Indexer:
         filehandle = open(filename)
         for line in filehandle:
             if line[:9] == '##TITLE##':
-                if document_count % 1000 == 0:
+                if document_count % 100 == 0:
                     print('indexed ', document_count)
                     sys.stdout.flush()
                 document_count += 1
@@ -56,8 +56,11 @@ class Indexer:
                     title_handle.write(str(document_count) + ' ' + line[10:].strip() + '\n' )
             else:
                 for word in regexp.findall(line):
+                    # skip foreign letters
                     bases = self.normalize(word)
                     for base in bases:
+                        if any([(ord(w) < ord('a') or ord(w) > ord('z')) and w not in 'ążęźćśóńł' for w in base]):
+                            continue 
                         if len(base) >= 3:
                             path = os.path.join(self.index_dir, base[:3])
                         else:
@@ -78,21 +81,20 @@ class Indexer:
             fh = open(os.path.join(self.index_dir, filename))
             index_dict = {}
             for line in fh:
-                w = line.split()
-                key = w[0]
-                value = " ".join(w[1:])
+                [key, value] = line.split(' ', 1)
                 value = value.rstrip()
+                # this will probably change with positional index
                 if key in index_dict and index_dict[key][-1] != value:
-                    index_dict[key].append(value)
+                    index_dict[key].append(value)   
                 else:
                     index_dict[key] = [value]
-            Indexer.dump_dict(index_dict, os.path.join(self.index_dir, filename + '.marshal'))
+            self.dump_dict(index_dict, os.path.join(self.index_dir, filename + '.marshal'))
 
-    def dump_dict(d, fn):
+    def dump_dict(self, d, fn):
         dh = open(fn, 'wb')
         marshal.dump(d, dh, 2)
         
-    def load_dict(fn):
+    def load_dict(self, fn):
         dh = open(fn, 'rb')
         return marshal.load(dh)
 
@@ -109,7 +111,7 @@ class Indexer:
         else:
             return lemated
 
-    def stem(w): #stub
+    def stem(self, w): #stub
         return w
 
     def get_posting(self, s):
@@ -117,12 +119,17 @@ class Indexer:
             filename = os.path.join(self.index_dir, 'SHORT.marshal')
         else:
             filename = os.path.join(self.index_dir, s[:3] + '.marshal')
-        d = Indexer.load_dict(filename)
-        return d[s]
+        d = self.load_dict(filename)
+        forms = self.normalize(s)
+        res = []
+        for form in forms:
+            if form in d:
+                res += d[form]
+        return [int(x) for x in sorted(res)]
 
 import sys
 
-if __name__ == "__main__":
+def main():
     indexer = Indexer()
 
     #print('initializing morphologic...', end="")
@@ -130,13 +137,17 @@ if __name__ == "__main__":
     #indexer.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt', 'data/morfologik.marshal')
     #print('ok')
 
-    #print('running indexing...')
-    #sys.stdout.flush()
+    print('running indexing...')
+    sys.stdout.flush()
     #indexer.index_documents('data/wikipedia_dla_wyszukiwarek.txt')
-    #print('ok')
+    indexer.index_documents('data/mini_wiki.txt')
+    print('ok')
 
-    #print('generating dictionaries...')
-    #sys.stdout.flush()
-    #indexer.generate_dicts()
-    #print('ok')
+    print('generating dictionaries...')
+    sys.stdout.flush()
+    indexer.generate_dicts()
+    print('ok')
     print(indexer.get_posting('niemagiczny'))
+
+if __name__ == "__main__":
+    main()
