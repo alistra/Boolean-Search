@@ -8,9 +8,6 @@ import marshal
 class Indexer:
     morphologic = {}
 
-    def index_dir_slashes(self):
-        return './' + self.index_dir + '/'
-    
     def __init__(self, index_dir = "index", compressed = False, stemmed = False):
         self.stemmed = stemmed
         self.compressed = compressed
@@ -48,35 +45,39 @@ class Indexer:
             self.dump_morphologic(cachefile)
 
     def index_documents(self, filename):
-        index_titles = True
-        if os.path.exists(self.index_dir_slashes() + 'TITLES'):
+        title_path = os.path.join(self.index_dir, 'TITLES')
+        if os.path.exists(title_path):
             index_titles = False        
         else:
-            t = open(self.index_dir_slashes() + 'TITLES','w')
+            index_titles = True
+            t = open(title_path, 'w')
 
         document_count = 0
         index_count = 0
+        regexp = re.compile(r'\w+')
 
         filehandle = open(filename)
         for line in filehandle:
-            m = re.search(r'^##TITLE## (.*)$', line)
-            if m:
+            if line[:9] == '##TITLE##':
+                if document_count % 1000 == 0:
+                    print('indexed ', document_count)
                 document_count += 1
-                if index_titles: t.write(str(document_count) + ' ' + m.group(1) + '\n' )
+                if index_titles:
+                    t.write(str(document_count) + ' ' + line[10:].strip() + '\n' )
             else:
-                for word in re.findall(r'\w+', line):
+                for word in regexp.findall(line):
                     bases = self.normalize(word)
                     for base in bases:
                         if len(base) >= 3:
-                            indexfilehandle = open(self.index_dir_slashes() + base[0:3], "a")
+                            path = os.path.join(self.index_dir, base[:3])
                         else:
-                            indexfilehandle = open(self.index_dir_slashes() + 'SHORT', "a") 
-                        indexfilehandle.write(base + " " + str(document_count) + "\n")
-                        indexfilehandle.close()
-        t.close()
+                            path = os.path.join(self.index_dir, 'SHORT') 
+
+                        indexfilehandle = open(path, 'a') 
+                        indexfilehandle.write(base + ' ' + str(document_count) + '\n')
 
     def normalize(self, w):
-        w = w.lower()
+        w = w.lower()#.strip(' ,`!()[]{};:\'"<>.?/')
  
         if w in self.morphologic:
             lemated = self.morphologic[w] 
