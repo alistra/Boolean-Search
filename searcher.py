@@ -65,9 +65,9 @@ class Searcher:
 
     def search_term(self, term):
         if term[0] == '~':
-            return SearchResult(self.indexer.docs(term[1:]), True)
+            return SearchResult(self.indexer.get_posting(term[1:]), True)
         else:
-            return SearchResult(self.indexer.docs(term), False)
+            return SearchResult(self.indexer.get_posting(term), False)
 
     def merge_or(self, res1, res2):
         """Merges with OR two search results in O(m + n) time."""
@@ -197,7 +197,7 @@ class SearcherTest(unittest.TestCase):
                 }
 
         class IndexerMock:
-            def docs(self2, term):
+            def get_posting(self2, term):
                 return self.docs[term]
 
         self.searcher = Searcher(IndexerMock())
