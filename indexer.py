@@ -2,7 +2,6 @@
 
 import os
 import re
-import time
 import marshal
 
 class Indexer:
@@ -113,7 +112,13 @@ class Indexer:
     def stem(w): #stub
         return w
 
-
+    def get_posting(self, s):
+        if len(s) < 3:
+            filename = os.path.join(self.index_dir, 'SHORT.marshal')
+        else:
+            filename = os.path.join(self.index_dir, s[:3] + '.marshal')
+        d = Indexer.load_dict(filename)
+        return d[s]
 
 import sys
 
@@ -134,3 +139,4 @@ if __name__ == "__main__":
     #sys.stdout.flush()
     #indexer.generate_dicts()
     #print('ok')
+    print(indexer.get_posting('niemagiczny'))
