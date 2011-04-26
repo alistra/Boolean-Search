@@ -34,7 +34,7 @@ class Indexer:
                 self.morphologic[forms[0]] = forms[1:]
             self.dump_dict(self.morphologic, cachefile)
 
-    def index_documents(self, filename):
+    def generate_index_file(self, filename):
         title_path = os.path.join(self.index_dir, 'TITLES')
         if os.path.exists(title_path):
             index_titles = False        
@@ -47,8 +47,8 @@ class Indexer:
 
         filehandle = open(filename)
                         
-        index_path = os.path.join(self.index_dir, 'WORDS')
-        indexfilehandle = open(index_path, 'a') 
+        self.index_path = os.path.join(self.index_dir, 'WORDS')
+        indexfilehandle = open(self.index_path, 'a') 
 
         for line in filehandle:
             if line[:9] == '##TITLE##':
@@ -66,6 +66,9 @@ class Indexer:
                         if (ord(f) < ord('a') or ord(f) > ord('z')) and f not in 'ążęźćśóńł': #between ord('0') and ord('9')
                             continue 
                         indexfilehandle.write(base + ' ' + str(document_count) + '\n')
+
+    def sort_index_file(self):
+        os.system("sort -k1,3 -s " + self.index_path + " > " + self.index_path + ".sorted")
 
     def generate_dicts(self):
         for i, filename in enumerate(os.listdir(self.index_dir)):
@@ -139,8 +142,8 @@ def main():
 
     #print('running indexing...')
     #sys.stdout.flush()
-    #indexer.index_documents('data/wikipedia_dla_wyszukiwarek.txt')
-    #indexer.index_documents('data/mini_wiki.txt')
+    #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
+    #indexer.generate_index_file('data/mini_wiki.txt')
     #print('ok')
 
     #print('generating dictionaries...')
