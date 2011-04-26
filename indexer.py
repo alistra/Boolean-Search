@@ -84,8 +84,9 @@ class Indexer:
                 [key, value] = line.split(' ', 1)
                 value = value.rstrip()
                 # this will probably change with positional index
-                if key in index_dict and index_dict[key][-1] != value:
-                    index_dict[key].append(value)   
+                if key in index_dict:
+                    if index_dict[key][-1] != value:
+                        index_dict[key].append(value)   
                 else:
                     index_dict[key] = [value]
             self.dump_dict(index_dict, os.path.join(self.index_dir, filename + '.marshal'))
