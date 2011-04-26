@@ -12,6 +12,7 @@ class Indexer:
         self.stemmed = stemmed
         self.compressed = compressed
         self.index_dir = self.create_index_directory(index_dir)
+        self.load_titles()
 
     def create_index_directory(self, dirname):
         if self.compressed or self.stemmed:
@@ -145,11 +146,15 @@ class Indexer:
 
     def stem(self, w): #stub
         return w
+    
+    def load_titles(self):
+        filename = self.titles_dict_path()
+        self.titles = self.load_dict(filename)
+        self.document_count = len(self.titles)
 
     def get_title(self, t):
-        filename = self.titles_dict_path()
         if self.titles == {}:
-            self.titles = self.load_dict(filename)
+            self.load_titles()
         return self.titles[t]
 
     def get_posting(self, s):
