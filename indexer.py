@@ -34,6 +34,13 @@ class Indexer:
                 self.morphologic[forms[0]] = forms[1:]
             self.dump_dict(self.morphologic, cachefile)
 
+    def unsorted_index_path(self):
+        return os.path.join(self.index_dir, 'WORDS')
+
+    def sorted_index_path(self):
+        return os.path.join(self.index_dir, 'WORDS.sorted')
+
+
     def generate_index_file(self, filename):
         title_path = os.path.join(self.index_dir, 'TITLES')
         if os.path.exists(title_path):
@@ -47,8 +54,7 @@ class Indexer:
 
         filehandle = open(filename)
                         
-        self.index_path = os.path.join(self.index_dir, 'WORDS')
-        indexfilehandle = open(self.index_path, 'a') 
+        indexfilehandle = open(self.unsorted_index_path(), 'a') 
 
         for line in filehandle:
             if line[:9] == '##TITLE##':
@@ -68,29 +74,46 @@ class Indexer:
                         indexfilehandle.write(base + ' ' + str(self.document_count) + '\n')
 
     def sort_index_file(self):
-        os.system("sort -k1,3 -s " + self.index_path + " > " + self.index_path + ".sorted")
+        os.system("sort --key=1.1,1.3 -s " + self.unsorted_index_path() + " > " + self.sorted_index_path())
 
     def generate_dicts(self):
-        for i, filename in enumerate(os.listdir(self.index_dir)):
-            if os.path.exists(os.path.join(self.index_dir, filename + '.marshal')) or filename[-8:] == '.marshal':
-                continue
+        filename = 'WORDS.sorted'
+        fh = open(os.path.join(self.index_dir, filename))
+        index_dict = {}
+        prefix = ""
 
-            if i % 1000 == 0:
-                print('generated ', i)
+        for i, line in enumerate(fh):
+            if i % 1000000 == 0:
+                print(str(i) + " parsed lines")
                 sys.stdout.flush()
-
-            fh = open(os.path.join(self.index_dir, filename))
-            index_dict = {}
-            for line in fh:
-                [key, value] = line.split(' ', 1)
-                value = value.rstrip()
-                # this will probably change with positional index
+            [key, value] = line.split(' ', 1)
+            value = int(value.rstrip())
+            if key[:3] == prefix:
                 if key in index_dict:
                     if index_dict[key][-1] != value:
                         index_dict[key].append(value)   
                 else:
                     index_dict[key] = [value]
-            self.dump_dict(index_dict, os.path.join(self.index_dir, filename + '.marshal'))
+            else:
+                self.dump_dict(index_dict, os.path.join(self.index_dir, prefix + '.marshal'))
+                index_dict.clear()
+                prefix = key[:3]
+
+        self.dump_dict(index_dict, os.path.join(self.index_dir, prefix + '.marshal'))
+
+        filename = 'TITLES'
+        titles_dict = {}
+            
+        print("indexing titles")
+        sys.stdout.flush()
+
+        for line in fh:
+            [key, value] = line.split(' ', 1)
+            value = value.rstrip()
+            key = int(key)
+            titles_dict[key] = value
+
+        self.dump_dict(titles_dict, os.path.join(self.index_dir,'TITLES.marshal'))
 
     def dump_dict(self, d, fn):
         dh = open(fn, 'wb')
@@ -145,6 +168,11 @@ def main():
     #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
     #indexer.generate_index_file('data/mini_wiki.txt')
     #print('ok')
+
+    print('sorting the index file...')
+    sys.stdout.flush()
+    indexer.sort_index_file()
+    print('ok')
 
     #print('generating dictionaries...')
     #sys.stdout.flush()
