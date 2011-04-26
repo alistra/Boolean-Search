@@ -40,14 +40,21 @@ class Indexer:
     def sorted_index_path(self):
         return os.path.join(self.index_dir, 'WORDS.sorted')
 
+    def titles_path(self):
+        return os.path.join(self.index_dir, 'TITLES')
+
+    def titles_dict_path(self):
+        return os.path.join(self.index_dir, 'TITLES.marshal')
+
+    def dict_path(self, prefix):
+        return os.path.join(self.index_dir, prefix + '.marshal')
 
     def generate_index_file(self, filename):
-        title_path = os.path.join(self.index_dir, 'TITLES')
-        if os.path.exists(title_path):
+        if os.path.exists(self.titles_path()):
             index_titles = False        
         else:
             index_titles = True
-            title_handle = open(title_path, 'w')
+            title_handle = open(self.titles_path(), 'w')
 
         self.document_count = 0
         word_regexp = re.compile(r'\w+')
@@ -77,8 +84,7 @@ class Indexer:
         os.system("sort --key=1.1,1.3 -s " + self.unsorted_index_path() + " > " + self.sorted_index_path())
 
     def generate_dicts(self):
-        filename = 'WORDS.sorted'
-        fh = open(os.path.join(self.index_dir, filename))
+        fh = open(self.sorted_index_path())
         index_dict = {}
         prefix = ""
 
@@ -95,13 +101,15 @@ class Indexer:
                 else:
                     index_dict[key] = [value]
             else:
-                self.dump_dict(index_dict, os.path.join(self.index_dir, prefix + '.marshal'))
+                self.dump_dict(index_dict, self.dict_path(prefix))
                 index_dict.clear()
+                index_dict[key] = [value]
                 prefix = key[:3]
 
-        self.dump_dict(index_dict, os.path.join(self.index_dir, prefix + '.marshal'))
+        self.dump_dict(index_dict, self.dict_path(prefix))
 
-        filename = 'TITLES'
+    def dump_titles(self):
+        fh = open(self.titles_path())
         titles_dict = {}
             
         print("indexing titles")
@@ -113,7 +121,7 @@ class Indexer:
             key = int(key)
             titles_dict[key] = value
 
-        self.dump_dict(titles_dict, os.path.join(self.index_dir,'TITLES.marshal'))
+        self.dump_dict(titles_dict, self.titles_dict_path())
 
     def dump_dict(self, d, fn):
         dh = open(fn, 'wb')
@@ -139,14 +147,16 @@ class Indexer:
     def stem(self, w): #stub
         return w
 
+    def get_title(self, t):
+        filename = self.titles_dict_path()
+        titles = self.load_dict(filename)
+        return titles[t]
+
     def get_posting(self, s):
         forms = self.normalize(s)
         res = []
         for form in forms:
-            if len(form) < 3:
-                filename = os.path.join(self.index_dir, 'SHORT.marshal')
-            else:
-                filename = os.path.join(self.index_dir, form[:3] + '.marshal')
+            filename = dict_path(form[:3])
             if os.path.exists(filename):
                 d = self.load_dict(filename)
                 if form in d:
@@ -178,6 +188,12 @@ def main():
     sys.stdout.flush()
     indexer.generate_dicts()
     print('ok')
+
+    print('generating title dictionary...')
+    sys.stdout.flush()
+    indexer.dump_titles()
+    print('ok')
+
     #print(indexer.get_posting('niemagiczny'))
 
 if __name__ == "__main__":
