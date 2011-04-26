@@ -127,7 +127,7 @@ class Indexer:
                 d = self.load_dict(filename)
                 if form in d:
                     res += d[form]
-        return [int(x) for x in sorted(res)]
+        return sorted([int(x) for x in res])
 
 import sys
 
