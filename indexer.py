@@ -18,8 +18,8 @@ class Indexer:
             if self.compressed: dirname = dirname + 'C' 
             if self.stemmed: dirname = dirname + 'S'
 
-        if not os.path.isdir('./' + dirname + '/'):
-            os.mkdir('./' + dirname + '/')
+        if not os.path.isdir(dirname + '/'):
+            os.mkdir(dirname + '/')
         return dirname
 
     def initialize_morphologic(self, filename, cachefile):
@@ -43,9 +43,13 @@ class Indexer:
             title_handle = open(title_path, 'w')
 
         document_count = 0
-        regexp = re.compile(r'\w+')
+        word_regexp = re.compile(r'\w+')
 
         filehandle = open(filename)
+                        
+        index_path = os.path.join(self.index_dir, 'WORDS')
+        indexfilehandle = open(index_path, 'a') 
+
         for line in filehandle:
             if line[:9] == '##TITLE##':
                 if document_count % 500 == 0:
@@ -55,18 +59,12 @@ class Indexer:
                 if index_titles:
                     title_handle.write(str(document_count) + ' ' + line[10:].strip() + '\n' )
             else:
-                for word in regexp.findall(line):
-                    # skip foreign letters
+                for word in word_regexp.findall(line):
                     bases = self.normalize(word)
                     for base in bases:
-                        if any([(ord(w) < ord('a') or ord(w) > ord('z')) and w not in 'ążęźćśóńł' for w in base]):
+                        f = base[0]
+                        if (ord(f) < ord('a') or ord(f) > ord('z')) and f not in 'ążęźćśóńł': #between ord('0') and ord('9')
                             continue 
-                        if len(base) >= 3:
-                            path = os.path.join(self.index_dir, base[:3])
-                        else:
-                            path = os.path.join(self.index_dir, 'SHORT') 
-
-                        indexfilehandle = open(path, 'a') 
                         indexfilehandle.write(base + ' ' + str(document_count) + '\n')
 
     def generate_dicts(self):
@@ -138,17 +136,17 @@ def main():
     #indexer.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt', 'data/morfologik.marshal')
     #print('ok')
 
-    print('running indexing...')
-    sys.stdout.flush()
+    #print('running indexing...')
+    #sys.stdout.flush()
     #indexer.index_documents('data/wikipedia_dla_wyszukiwarek.txt')
-    indexer.index_documents('data/mini_wiki.txt')
-    print('ok')
+    #indexer.index_documents('data/mini_wiki.txt')
+    #print('ok')
 
-    print('generating dictionaries...')
-    sys.stdout.flush()
-    indexer.generate_dicts()
-    print('ok')
-    print(indexer.get_posting('niemagiczny'))
+    #print('generating dictionaries...')
+    #sys.stdout.flush()
+    #indexer.generate_dicts()
+    #print('ok')
+    #print(indexer.get_posting('niemagiczny'))
 
 if __name__ == "__main__":
     main()
