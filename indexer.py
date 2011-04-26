@@ -169,15 +169,15 @@ def main():
     #indexer.generate_index_file('data/mini_wiki.txt')
     #print('ok')
 
-    print('sorting the index file...')
-    sys.stdout.flush()
-    indexer.sort_index_file()
-    print('ok')
-
-    #print('generating dictionaries...')
+    #print('sorting the index file...')
     #sys.stdout.flush()
-    #indexer.generate_dicts()
+    #indexer.sort_index_file()
     #print('ok')
+
+    print('generating dictionaries...')
+    sys.stdout.flush()
+    indexer.generate_dicts()
+    print('ok')
     #print(indexer.get_posting('niemagiczny'))
 
 if __name__ == "__main__":
