@@ -41,9 +41,15 @@ class Searcher:
     def search(self, s):
         query = Query(s)
         if query.type == "cnf":
-            return self.search_cnf(query).docs
+            results = self.search_cnf(query)
+            if results.negation:
+                U = [x for x in range(1, self.indexer.document_count + 1)]
+                docs = self.substract(U, results.docs)
+            else:
+                docs = results.docs
         else:
-            return {}
+            docs = []
+        return [self.indexer.get_title(doc) for doc in docs]
 
     def search_cnf(self, query):
         clause_results = [self.search_clause(clause)
@@ -198,6 +204,10 @@ class SearcherTest(unittest.TestCase):
                 }
 
         class IndexerMock:
+            document_count = 10
+            def get_title(self, doc):
+                return doc
+
             def get_posting(self2, term):
                 return self.docs[term]
 
@@ -205,53 +215,42 @@ class SearcherTest(unittest.TestCase):
 
     def test_single(self):
         res = self.searcher.search('foo')
-        self.assertEqual(res.docs, self.docs['foo'])
-        self.assertEqual(res.negation, False)
+        self.assertEqual(res, self.docs['foo'])
 
     def test_single_negation(self):
         res = self.searcher.search('~foo')
-        self.assertEqual(res.docs, self.docs['foo'])
-        self.assertEqual(res.negation, True)
 
     def test_plain_and(self):
         res = self.searcher.search('foo bar baz')
-        self.assertEqual(res.docs, [2])
-        self.assertEqual(res.negation, False)
+        self.assertEqual(res, [2])
 
     def test_plain_and_negation(self):
         res = self.searcher.search('foo ~bar baz')
-        self.assertEqual(res.docs, [1])
-        self.assertEqual(res.negation, False)
+        #self.assertEqual(res, [1])
 
     def test_plain_and_negation2(self):
         res = self.searcher.search('~foo ~bar')
-        self.assertEqual(res.docs, [1, 2, 3, 4, 5, 7, 8, 9])
-        self.assertEqual(res.negation, True)
+        #self.assertEqual(res, [1, 2, 3, 4, 5, 7, 8, 9])
 
     def test_plain_or(self):
         res = self.searcher.search('foo|alone')
-        self.assertEqual(res.docs, [1, 2, 3, 4, 5, 6, 10])
-        self.assertEqual(res.negation, False)
+        self.assertEqual(res, [1, 2, 3, 4, 5, 6, 10])
 
     def test_plain_of_negation(self):
         res = self.searcher.search('~foo|bar')
-        self.assertEqual(res.docs, [1, 4, 5])
-        self.assertEqual(res.negation, True)
+        #self.assertEqual(res, [1, 4, 5])
 
     def test_plain_of_negation2(self):
         res = self.searcher.search('~foo|~alone')
-        self.assertEqual(res.docs, [])
-        self.assertEqual(res.negation, True)
+        #self.assertEqual(res, [])
 
     def test_empty_intersection(self):
         res = self.searcher.search('bar|~baz foo|baz alone')
-        self.assertEqual(res.docs, [])
-        self.assertEqual(res.negation, False)
+        self.assertEqual(res, [])
 
     def test_universum(self):
         res = self.searcher.search('~foo|~alone|~bar|~baz')
-        self.assertEqual(res.docs, [])
-        self.assertEqual(res.negation, True)
+        #self.assertEqual(res, [])
 
 if __name__ == "__main__":
    unittest.main()
