@@ -6,6 +6,7 @@ import marshal
 
 class Indexer:
     morphologic = {}
+    titles = {}
 
     def __init__(self, index_dir = "index", compressed = False, stemmed = False):
         self.stemmed = stemmed
@@ -147,14 +148,15 @@ class Indexer:
 
     def get_title(self, t):
         filename = self.titles_dict_path()
-        titles = self.load_dict(filename)
-        return titles[t]
+        if self.titles == {}:
+            self.titles = self.load_dict(filename)
+        return self.titles[t]
 
     def get_posting(self, s):
         forms = self.normalize(s)
         res = []
         for form in forms:
-            filename = dict_path(form[:3])
+            filename = self.dict_path(form[:3])
             if os.path.exists(filename):
                 d = self.load_dict(filename)
                 if form in d:
