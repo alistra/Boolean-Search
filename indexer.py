@@ -42,7 +42,7 @@ class Indexer:
             index_titles = True
             title_handle = open(title_path, 'w')
 
-        document_count = 0
+        self.document_count = 0
         word_regexp = re.compile(r'\w+')
 
         filehandle = open(filename)
@@ -52,12 +52,12 @@ class Indexer:
 
         for line in filehandle:
             if line[:9] == '##TITLE##':
-                if document_count % 500 == 0:
-                    print('indexed ', document_count)
+                if self.document_count % 500 == 0:
+                    print('indexed ', self.document_count)
                     sys.stdout.flush()
-                document_count += 1
+                self.document_count += 1
                 if index_titles:
-                    title_handle.write(str(document_count) + ' ' + line[10:].strip() + '\n' )
+                    title_handle.write(str(self.document_count) + ' ' + line[10:].strip() + '\n' )
             else:
                 for word in word_regexp.findall(line):
                     bases = self.normalize(word)
@@ -65,7 +65,7 @@ class Indexer:
                         f = base[0]
                         if (ord(f) < ord('a') or ord(f) > ord('z')) and f not in 'ążęźćśóńł': #between ord('0') and ord('9')
                             continue 
-                        indexfilehandle.write(base + ' ' + str(document_count) + '\n')
+                        indexfilehandle.write(base + ' ' + str(self.document_count) + '\n')
 
     def sort_index_file(self):
         os.system("sort -k1,3 -s " + self.index_path + " > " + self.index_path + ".sorted")
