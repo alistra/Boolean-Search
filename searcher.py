@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3.1
 
 import unittest
 
@@ -49,7 +49,7 @@ class Searcher:
                 for clause in query.clauses]
 
         # sort by result length
-        clause_results.sort(cmp = lambda x, y: len(x.docs) < len(y.docs))
+        clause_results.sort(key = lambda x: len(x.docs))
 
         results = clause_results[0]
         for clause_result in clause_results[1:]:
