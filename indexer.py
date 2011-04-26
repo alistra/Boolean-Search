@@ -75,10 +75,8 @@ class Indexer:
                 for word in word_regexp.findall(line):
                     bases = self.normalize(word)
                     for base in bases:
-                        f = base[0]
-                        if (ord(f) < ord('a') or ord(f) > ord('z')) and f not in 'ążęźćśóńł': #between ord('0') and ord('9')
-                            continue 
-                        indexfilehandle.write(base + ' ' + str(self.document_count) + '\n')
+                        if all([(ord(w) >= ord('a') and ord(w) <= ord('z')) or (ord(w) >= ord('0') and ord(w) <= ord('9')) or (w in 'ążęźćśóńł') for w in base]):
+                            indexfilehandle.write(base + ' ' + str(self.document_count) + '\n')
 
     def sort_index_file(self):
         os.system("sort --key=1.1,1.3 -s " + self.unsorted_index_path() + " > " + self.sorted_index_path())
@@ -184,15 +182,15 @@ def main():
     #indexer.sort_index_file()
     #print('ok')
 
-    print('generating dictionaries...')
-    sys.stdout.flush()
-    indexer.generate_dicts()
-    print('ok')
+    #print('generating dictionaries...')
+    #sys.stdout.flush()
+    #indexer.generate_dicts()
+    #print('ok')
 
-    print('generating title dictionary...')
-    sys.stdout.flush()
-    indexer.dump_titles()
-    print('ok')
+    #print('generating title dictionary...')
+    #sys.stdout.flush()
+    #indexer.dump_titles()
+    #print('ok')
 
     #print(indexer.get_posting('niemagiczny'))
 
