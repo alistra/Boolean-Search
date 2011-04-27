@@ -1,10 +1,11 @@
 #!/usr/bin/env python3.1
-
+"""File containing the Indexer class and some tests for it"""
 import os
 import re
 import marshal
 
 class Indexer:
+    """Class for generating index files and getting posting lists"""
     morphologic = {}
     titles = {}
 
@@ -12,14 +13,17 @@ class Indexer:
         self.stemmed = stemmed
         self.compressed = compressed
         self.index_dir = self.create_index_directory(index_dir)
+        self.document_count = 0
         self.load_titles()
 
     def create_index_directory(self, dirname):
         """Creates the index directory, if it doesn't exist yet"""
         if self.compressed or self.stemmed:
             dirname = dirname + '_'
-            if self.compressed: dirname = dirname + 'C' 
-            if self.stemmed: dirname = dirname + 'S'
+            if self.compressed:
+                dirname = dirname + 'C' 
+            if self.stemmed:
+                dirname = dirname + 'S'
 
         if not os.path.isdir(dirname + '/'):
             os.mkdir(dirname + '/')
@@ -28,7 +32,7 @@ class Indexer:
     def initialize_morphologic(self, filename, cachefile):
         """Generates morfologic-data dictionary and caches it, restores if it was cached already"""
         if os.path.exists(cachefile):
-            self.load_dict(cachefile)
+            Indexer.load_dict(cachefile)
     
         if self.morphologic == {}:
             filehandle = open(filename)
@@ -36,7 +40,7 @@ class Indexer:
                 forms = line.split(' ')
                 forms[-1] = forms[-1].rstrip()
                 self.morphologic[forms[0]] = forms[1:]
-            self.dump_dict(self.morphologic, cachefile)
+            Indexer.dump_dict(self.morphologic, cachefile)
 
     def unsorted_index_path(self):
         """Returns path to the unsorted index file"""
@@ -94,11 +98,11 @@ class Indexer:
 
     def generate_dicts(self):
         """Generates the three letter dictionary files from the big sorted index file"""
-        fh = open(self.sorted_index_path())
+        index_filehandle = open(self.sorted_index_path())
         index_dict = {}
         prefix = ""
 
-        for i, line in enumerate(fh):
+        for i, line in enumerate(index_filehandle):
             if i % 1000000 == 0:
                 print(str(i) + " parsed lines")
                 sys.stdout.flush()
@@ -111,84 +115,88 @@ class Indexer:
                 else:
                     index_dict[key] = [value]
             else:
-                self.dump_dict(index_dict, self.dict_path(prefix))
+                Indexer.dump_dict(index_dict, self.dict_path(prefix))
                 index_dict.clear()
                 index_dict[key] = [value]
                 prefix = key[:3]
 
-        self.dump_dict(index_dict, self.dict_path(prefix))
+        Indexer.dump_dict(index_dict, self.dict_path(prefix))
 
     def dump_titles(self):
         """Dumps titles info into a marshalled file"""
-        fh = open(self.titles_path())
+        titles_filehandle = open(self.titles_path())
         titles_dict = {}
             
         print("indexing titles")
         sys.stdout.flush()
 
-        for line in fh:
+        for line in titles_filehandle:
             [key, value] = line.split(' ', 1)
             value = value.rstrip()
             key = int(key)
             titles_dict[key] = value
 
-        self.dump_dict(titles_dict, self.titles_dict_path())
+        Indexer.dump_dict(titles_dict, self.titles_dict_path())
 
-    def dump_dict(self, d, fn):
+    @staticmethod
+    def dump_dict(dictionary, dict_filename):
         """Dups a dictionary to a file"""
-        dh = open(fn, 'wb')
-        marshal.dump(d, dh, 2)
+        dict_filehandle = open(dict_filename, 'wb')
+        marshal.dump(dictionary, dict_filehandle, 2)
         
-    def load_dict(self, fn):
+    @staticmethod
+    def load_dict(dict_filename):
         """Loads a dictionary from a file"""
-        dh = open(fn, 'rb')
-        return marshal.load(dh)
+        dict_filehandle = open(dict_filename, 'rb')
+        return marshal.load(dict_filehandle)
 
-    def normalize(self, w):
+    def normalize(self, word):
         """Normalizes and possibly stems the word"""
-        w = w.lower()
+        word = word.lower()
  
-        if w in self.morphologic:
-            lemated = self.morphologic[w] 
+        if word in self.morphologic:
+            lemated = self.morphologic[word] 
         else:
-            lemated = [w]
+            lemated = [word]
 
         if self.stemmed:
-            return [stem(w) for w in lemated]
+            return [Indexer.stem(word) for word in lemated]
         else:
             return lemated
-
-    def stem(self, w): #stub
+    
+    @staticmethod
+    def stem(word): #stub
         """Stems the word"""
-        return w
+        return word
     
     def load_titles(self):
         """Loads the titles count info"""
         filename = self.titles_dict_path()
-        self.titles = self.load_dict(filename)
+        self.titles = Indexer.load_dict(filename)
         self.document_count = len(self.titles)
 
-    def get_title(self, t):
+    def get_title(self, article_number):
         """Gets a title from a marshalled file"""
         if self.titles == {}:
             self.load_titles()
-        return self.titles[t]
+        return self.titles[article_number]
 
-    def get_posting(self, s):
+    def get_posting(self, word):
         """Gets a posting from a marshalled file for a given word"""
-        forms = self.normalize(s)
+        forms = self.normalize(word)
         res = []
         for form in forms:
             filename = self.dict_path(form[:3])
             if os.path.exists(filename):
-                d = self.load_dict(filename)
-                if form in d:
-                    res += d[form]
-        return sorted([int(x) for x in res])
+                prefix_dict = Indexer.load_dict(filename)
+                if form in prefix_dict:
+                    res += prefix_dict[form]
+        return sorted(res)
 
 import sys
 
 def main():
+    """Does some indexer testing"""
     indexer = Indexer()
 
     #print('initializing morphologic...', end="")
@@ -217,7 +225,7 @@ def main():
     #indexer.dump_titles()
     #print('ok')
 
-    #print(indexer.get_posting('niemagiczny'))
+    print(indexer.get_posting('niemagiczny'))
 
 if __name__ == "__main__":
     main()
