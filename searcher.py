@@ -174,7 +174,7 @@ class QueryTest(unittest.TestCase):
         self.assertEqual(q.terms, ['foo', 'bar', 'baz'])
         self.assertEqual(q.type, 'phrase')
 
-    def test_single_word(self):
+    def test_single_word_phrase(self):
         q = Query('"term1"')
         self.assertEqual(q.terms, ['term1'])
         self.assertEqual(q.type, 'phrase')
@@ -184,7 +184,7 @@ class QueryTest(unittest.TestCase):
         self.assertEqual(q.clauses, [['foo'], ['bar', 'baz'], ['~not'], ['term1', '~term2']])
         self.assertEqual(q.type, 'cnf')
     
-    def test_single_word(self):
+    def test_single_word_cnf(self):
         q = Query("single")
         self.assertEqual(q.clauses, [['single']])
         self.assertEqual(q.type, 'cnf')
