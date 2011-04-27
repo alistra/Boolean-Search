@@ -15,6 +15,7 @@ class Indexer:
         self.load_titles()
 
     def create_index_directory(self, dirname):
+        """Creates the index directory, if it doesn't exist yet"""
         if self.compressed or self.stemmed:
             dirname = dirname + '_'
             if self.compressed: dirname = dirname + 'C' 
@@ -25,6 +26,7 @@ class Indexer:
         return dirname
 
     def initialize_morphologic(self, filename, cachefile):
+        """Generates morfologic-data dictionary and caches it, restores if it was cached already"""
         if os.path.exists(cachefile):
             self.load_dict(cachefile)
     
@@ -37,21 +39,27 @@ class Indexer:
             self.dump_dict(self.morphologic, cachefile)
 
     def unsorted_index_path(self):
+        """Returns path to the unsorted index file"""
         return os.path.join(self.index_dir, 'WORDS')
 
     def sorted_index_path(self):
+        """Returns path to the sorted index file"""
         return os.path.join(self.index_dir, 'WORDS.sorted')
 
     def titles_path(self):
+        """Returns path to the titles info file"""
         return os.path.join(self.index_dir, 'TITLES')
 
     def titles_dict_path(self):
+        """Returns path to the titles dictionary file"""
         return os.path.join(self.index_dir, 'TITLES.marshal')
 
     def dict_path(self, prefix):
+        """Returns path to the apropriate dictionary file for a word"""
         return os.path.join(self.index_dir, prefix + '.marshal')
 
     def generate_index_file(self, filename):
+        """Generates big unsorted index file with the info about all word occurences"""
         if os.path.exists(self.titles_path()):
             index_titles = False        
         else:
@@ -81,9 +89,11 @@ class Indexer:
                             indexfilehandle.write(base + ' ' + str(self.document_count) + '\n')
 
     def sort_index_file(self):
+        """Sorts the big index file"""
         os.system("sort --key=1.1,1.3 -s " + self.unsorted_index_path() + " > " + self.sorted_index_path())
 
     def generate_dicts(self):
+        """Generates the three letter dictionary files from the big sorted index file"""
         fh = open(self.sorted_index_path())
         index_dict = {}
         prefix = ""
@@ -109,6 +119,7 @@ class Indexer:
         self.dump_dict(index_dict, self.dict_path(prefix))
 
     def dump_titles(self):
+        """Dumps titles info into a marshalled file"""
         fh = open(self.titles_path())
         titles_dict = {}
             
@@ -124,14 +135,17 @@ class Indexer:
         self.dump_dict(titles_dict, self.titles_dict_path())
 
     def dump_dict(self, d, fn):
+        """Dups a dictionary to a file"""
         dh = open(fn, 'wb')
         marshal.dump(d, dh, 2)
         
     def load_dict(self, fn):
+        """Loads a dictionary from a file"""
         dh = open(fn, 'rb')
         return marshal.load(dh)
 
     def normalize(self, w):
+        """Normalizes and possibly stems the word"""
         w = w.lower()
  
         if w in self.morphologic:
@@ -145,19 +159,23 @@ class Indexer:
             return lemated
 
     def stem(self, w): #stub
+        """Stems the word"""
         return w
     
     def load_titles(self):
+        """Loads the titles count info"""
         filename = self.titles_dict_path()
         self.titles = self.load_dict(filename)
         self.document_count = len(self.titles)
 
     def get_title(self, t):
+        """Gets a title from a marshalled file"""
         if self.titles == {}:
             self.load_titles()
         return self.titles[t]
 
     def get_posting(self, s):
+        """Gets a posting from a marshalled file for a given word"""
         forms = self.normalize(s)
         res = []
         for form in forms:
