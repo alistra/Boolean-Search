@@ -219,6 +219,7 @@ class SearcherTest(unittest.TestCase):
 
     def test_single_negation(self):
         res = self.searcher.search('~foo')
+        self.assertEqual(res, [6, 7, 8, 9, 10])
 
     def test_plain_and(self):
         res = self.searcher.search('foo bar baz')
@@ -226,11 +227,11 @@ class SearcherTest(unittest.TestCase):
 
     def test_plain_and_negation(self):
         res = self.searcher.search('foo ~bar baz')
-        #self.assertEqual(res, [1])
+        self.assertEqual(res, [1])
 
     def test_plain_and_negation2(self):
         res = self.searcher.search('~foo ~bar')
-        #self.assertEqual(res, [1, 2, 3, 4, 5, 7, 8, 9])
+        self.assertEqual(res, [6, 10])
 
     def test_plain_or(self):
         res = self.searcher.search('foo|alone')
@@ -238,19 +239,15 @@ class SearcherTest(unittest.TestCase):
 
     def test_plain_of_negation(self):
         res = self.searcher.search('~foo|bar')
-        #self.assertEqual(res, [1, 4, 5])
+        self.assertEqual(res, [2, 3, 6, 7, 8, 9, 10])
 
     def test_plain_of_negation2(self):
         res = self.searcher.search('~foo|~alone')
-        #self.assertEqual(res, [])
+        self.assertEqual(res, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
     def test_empty_intersection(self):
         res = self.searcher.search('bar|~baz foo|baz alone')
         self.assertEqual(res, [])
-
-    def test_universum(self):
-        res = self.searcher.search('~foo|~alone|~bar|~baz')
-        #self.assertEqual(res, [])
 
 if __name__ == "__main__":
    unittest.main()
