@@ -1,8 +1,10 @@
 #!/usr/bin/python3.1
+"""An executable file for handling queries in an interactive or a batch mode"""
 
 import searcher, indexer, sys
 
 def print_results(results):
+    """Prints the result of a query"""
     print('TOTAL: ', len(results))
     print('\n'.join(results))
 
