@@ -43,8 +43,7 @@ class Searcher:
         if query.type == "cnf":
             results = self.search_cnf(query)
             if results.negation:
-                U = list(range(1, self.indexer.document_count + 1))
-                docs = self.subtract(U, results.docs)
+                docs = self.subtract_from_uni(self.indexer.document_count + 1, results.docs)
             else:
                 docs = results.docs
         else:
@@ -143,6 +142,15 @@ class Searcher:
                         e2 = d2.__next__()
             except StopIteration:
                 return SearchResult(res, False)
+
+    def subtract_from_uni(self, document_count, d):
+        res = []
+        start = 1
+        for n in d:
+            res += range(start,n)
+            start = n+1
+        res += range(start, document_count)
+        return res
 
     def subtract(self, d1, d2):
         """subtracts two lists in O(m + n) time."""
