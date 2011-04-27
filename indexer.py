@@ -115,12 +115,29 @@ class Indexer:
                 else:
                     index_dict[key] = [value]
             else:
-                Indexer.dump_dict(index_dict, self.dict_path(prefix))
+                if self.compressed:
+                    Indexer.dump_dict(Indexer.compress_dict(index_dict), self.dict_path(prefix))
+                else:
+                    Indexer.dump_dict(index_dict, self.dict_path(prefix))
+
                 index_dict.clear()
                 index_dict[key] = [value]
                 prefix = key[:3]
 
-        Indexer.dump_dict(index_dict, self.dict_path(prefix))
+        if self.compressed:
+            Indexer.dump_dict(Indexer.compress_dict(index_dict), self.dict_path(prefix))
+        else:
+            Indexer.dump_dict(index_dict, self.dict_path(prefix))
+
+    @staticmethod
+    def compress_dict(dictionary):#stub
+        """Compresses the contents of a dictionary"""
+        return dictionary
+
+    @staticmethod
+    def decompress_posting(posting):#stub
+        """Decompresses the posting list from a dictionary with compressed posting lists"""
+        return posting
 
     def dump_titles(self):
         """Dumps titles info into a marshalled file"""
@@ -179,7 +196,7 @@ class Indexer:
         """Gets a title from a marshalled file"""
         if self.titles == {}:
             self.load_titles()
-        return self.titles[article_number]
+        return str(self.titles[article_number])
 
     def get_posting(self, word):
         """Gets a posting from a marshalled file for a given word"""
@@ -190,7 +207,10 @@ class Indexer:
             if os.path.exists(filename):
                 prefix_dict = Indexer.load_dict(filename)
                 if form in prefix_dict:
-                    res += prefix_dict[form]
+                    if self.compressed:
+                        res += Indexer.decompress_posting(prefix_dict[form])
+                    else:
+                        res += prefix_dict[form]
         return sorted(res)
 
 import sys

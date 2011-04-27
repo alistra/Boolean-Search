@@ -4,8 +4,7 @@ import searcher, indexer, sys
 
 def print_results(results):
     print('TOTAL: ', len(results))
-    for res in results:
-        print(res)
+    print('\n'.join(results))
 
 s = searcher.Searcher(indexer.Indexer())
 if len(sys.argv) > 1:

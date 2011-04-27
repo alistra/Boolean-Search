@@ -43,14 +43,14 @@ class Searcher:
         if query.type == "cnf":
             results = self.search_cnf(query)
             if results.negation:
-                U = [x for x in range(1, self.indexer.document_count + 1)]
+                U = list(range(1, self.indexer.document_count + 1))
                 docs = self.substract(U, results.docs)
             else:
                 docs = results.docs
         else:
             docs = []
 
-        return [self.indexer.get_title(doc) for doc in docs]
+        return list(map(self.indexer.get_title, docs))
 
     def search_cnf(self, query):
         clause_results = [self.search_clause(clause)
@@ -126,20 +126,23 @@ class Searcher:
             return SearchResult(self.substract(res1.docs, res2.docs), False)
         else:
             # x & y
-            d1 = res1.docs
-            d2 = res2.docs
-            i1 = i2 = 0
+            d1 = iter(res1.docs)
+            d2 = iter(res2.docs)
             res = []
-            while i1 < len(d1) and i2 < len(d2):
-                if d1[i1] < d2[i2]:
-                    i1 +=  1
-                elif d1[i1] > d2[i2]:
-                    i2 += 1
-                else:
-                    res.append(d1[i1])
-                    i1 += 1
-                    i2 += 1
-            return SearchResult(res, False)
+            try:
+                e1 = d1.__next__()
+                e2 = d2.__next__()
+                while True:
+                    if e1 < e2:
+                        e1 = d1.__next__()
+                    elif e1 > e2:
+                        e2 = d2.__next__()
+                    else:
+                        res.append(e1)
+                        e1 = d1.__next__()
+                        e2 = d2.__next__()
+            except StopIteration:
+                return SearchResult(res, False)
 
     def substract(self, d1, d2):
         """Substracts two lists in O(m + n) time."""
@@ -150,7 +153,7 @@ class Searcher:
             if d1[i1] < d2[i2]:
                 res.append(d1[i1])
                 i1 += 1
-            elif d1[0] > d2[0]:
+            elif d1[i1] > d2[i2]:
                 i2 += 1
             else:
                 i1 += 1
