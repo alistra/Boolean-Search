@@ -44,7 +44,7 @@ class Searcher:
             results = self.search_cnf(query)
             if results.negation:
                 U = list(range(1, self.indexer.document_count + 1))
-                docs = self.substract(U, results.docs)
+                docs = self.subtract(U, results.docs)
             else:
                 docs = results.docs
         else:
@@ -87,10 +87,10 @@ class Searcher:
             return res
         elif res1.negation:
             # ~x | y  <=>  ~(x \ y)
-            return SearchResult(self.substract(res1.docs, res2.docs), True)
+            return SearchResult(self.subtract(res1.docs, res2.docs), True)
         elif res2.negation:
             # x | ~y  <=>  ~(y \ x)
-            return SearchResult(self.substract(res2.docs, res1.docs), True)
+            return SearchResult(self.subtract(res2.docs, res1.docs), True)
         else:
             # x | y
             d1 = res1.docs
@@ -120,10 +120,10 @@ class Searcher:
             return res
         elif res1.negation:
             # ~x & y  <=> y \ x
-            return SearchResult(self.substract(res2.docs, res1.docs), False)
+            return SearchResult(self.subtract(res2.docs, res1.docs), False)
         elif res2.negation:
             # x & ~y  <=> x \ y
-            return SearchResult(self.substract(res1.docs, res2.docs), False)
+            return SearchResult(self.subtract(res1.docs, res2.docs), False)
         else:
             # x & y
             d1 = iter(res1.docs)
@@ -144,8 +144,8 @@ class Searcher:
             except StopIteration:
                 return SearchResult(res, False)
 
-    def substract(self, d1, d2):
-        """Substracts two lists in O(m + n) time."""
+    def subtract(self, d1, d2):
+        """subtracts two lists in O(m + n) time."""
         # x \ y
         res = []
         i1 = i2 = 0
