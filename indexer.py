@@ -105,7 +105,7 @@ class Indexer:
 
     def sort_index_file(self):
         """Sorts the big index file"""
-        os.system("sort -T. -k1,1 -s " + self.unsorted_index_path() + " > " + self.sorted_index_path())
+        os.system("LC_ALL=C sort -T. -k1,1 -s " + self.unsorted_index_path() + " > " + self.sorted_index_path())
 
     def generate_dicts(self):
         """Generates the three letter dictionary files from the big sorted index file"""
@@ -240,10 +240,10 @@ def main():
     #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
     #print('ok')
 
-    #print('sorting the index file...')
-    #sys.stdout.flush()
-    #indexer.sort_index_file()
-    #print('ok')
+    print('sorting the index file...')
+    sys.stdout.flush()
+    indexer.sort_index_file()
+    print('ok')
 
     print('generating dictionaries...')
     sys.stdout.flush()
