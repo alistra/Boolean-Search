@@ -14,7 +14,6 @@ class Indexer:
         self.compressed = compressed
         self.index_dir = self.create_index_directory(index_dir)
         self.document_count = 0
-        self.load_titles()
 
     def create_index_directory(self, dirname):
         """Creates the index directory, if it doesn't exist yet"""
@@ -108,10 +107,11 @@ class Indexer:
                 sys.stdout.flush()
             [key, value] = line.split(' ', 1)
             value = int(value.rstrip())
+            
             if key[:3] == prefix:
                 if key in index_dict:
                     if index_dict[key][-1] != value:
-                        index_dict[key].append(value)   
+                        index_dict[key].append(value)
                 else:
                     index_dict[key] = [value]
             else:
@@ -170,7 +170,10 @@ class Indexer:
     def normalize(self, word):
         """Normalizes and possibly stems the word"""
         word = word.lower()
- 
+        
+        if self.morphologic == {}:
+            self.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt', 'data/morfologik.marshal')
+
         if word in self.morphologic:
             lemated = self.morphologic[word] 
         else:
@@ -235,17 +238,17 @@ def main():
     #indexer.sort_index_file()
     #print('ok')
 
-    #print('generating dictionaries...')
-    #sys.stdout.flush()
-    #indexer.generate_dicts()
-    #print('ok')
+    print('generating dictionaries...')
+    sys.stdout.flush()
+    indexer.generate_dicts()
+    print('ok')
 
-    #print('generating title dictionary...')
-    #sys.stdout.flush()
-    #indexer.dump_titles()
-    #print('ok')
+    print('generating title dictionary...')
+    sys.stdout.flush()
+    indexer.dump_titles()
+    print('ok')
 
-    print(indexer.get_posting('niemagiczny'))
+    print(indexer.get_posting('jest'))
 
 if __name__ == "__main__":
     main()
