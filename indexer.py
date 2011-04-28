@@ -4,6 +4,10 @@ import os
 import re
 import marshal
 
+class NonPolishCharacter(Exception):
+    """Exception for an occurence of a polish character"""
+    pass
+
 class Indexer:
     """Class for generating index files and getting posting lists"""
     morphologic = {}
@@ -78,7 +82,7 @@ class Indexer:
 
         for line in filehandle:
             if line[:9] == '##TITLE##':
-                if self.document_count % 500 == 0:
+                if self.document_count % 1000 == 0:
                     print('indexed ', self.document_count)
                     sys.stdout.flush()
                 self.document_count += 1
@@ -88,8 +92,15 @@ class Indexer:
                 for word in word_regexp.findall(line):
                     bases = self.normalize(word)
                     for base in bases:
-                        if all([(ord(w) >= ord('a') and ord(w) <= ord('z')) or (ord(w) >= ord('0') and ord(w) <= ord('9')) or (w in 'ążęźćśóńł') for w in base]):
+                        try:
+                            for char in base:
+                                if not( (ord(char) >= ord('a') and ord(char) <= ord('z')) or
+                                        (ord(char) >= ord('0') and ord(char) <= ord('9')) or
+                                        (char in 'ążęźćśóńł')):
+                                    raise NonPolishCharacter
                             indexfilehandle.write(base + ' ' + str(self.document_count) + '\n')
+                        except NonPolishCharacter:
+                            pass
 
     def sort_index_file(self):
         """Sorts the big index file"""
@@ -222,16 +233,10 @@ def main():
     """Does some indexer testing"""
     indexer = Indexer()
 
-    #print('initializing morphologic...', end="")
-    #sys.stdout.flush()
-    #indexer.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt', 'data/morfologik.marshal')
-    #print('ok')
-
-    #print('running indexing...')
-    #sys.stdout.flush()
-    #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
-    #indexer.generate_index_file('data/mini_wiki.txt')
-    #print('ok')
+    print('running indexing...')
+    sys.stdout.flush()
+    indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
+    print('ok')
 
     print('sorting the index file...')
     sys.stdout.flush()
