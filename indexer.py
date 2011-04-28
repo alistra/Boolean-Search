@@ -3,6 +3,7 @@
 import os
 import re
 import marshal
+import sys
 
 class NonPolishCharacter(Exception):
     """Exception for an occurence of a polish character"""
@@ -126,6 +127,8 @@ class Indexer:
                 else:
                     index_dict[key] = [value]
             else:
+                if os.path.exists(self.dict_path(prefix)):
+                    print("ERROR: dict file already exists " + self.dict_path(prefix))
                 if self.compressed:
                     Indexer.dump_dict(Indexer.compress_dict(index_dict), self.dict_path(prefix))
                 else:
@@ -227,21 +230,20 @@ class Indexer:
                         res += prefix_dict[form]
         return sorted(res)
 
-import sys
 
 def main():
     """Does some indexer testing"""
     indexer = Indexer()
 
-    print('running indexing...')
-    sys.stdout.flush()
-    indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
-    print('ok')
+    #print('running indexing...')
+    #sys.stdout.flush()
+    #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
+    #print('ok')
 
-    print('sorting the index file...')
-    sys.stdout.flush()
-    indexer.sort_index_file()
-    print('ok')
+    #print('sorting the index file...')
+    #sys.stdout.flush()
+    #indexer.sort_index_file()
+    #print('ok')
 
     print('generating dictionaries...')
     sys.stdout.flush()
