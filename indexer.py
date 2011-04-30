@@ -5,20 +5,25 @@ import re
 import marshal
 import sys
 
-class NonPolishCharacter(Exception):
-    """Exception for an occurence of a polish character"""
+def immediate_print(string):
+    """A function to print and flush the stdout immediately"""
+    print(string)
+    sys.stdout.flush()
+
+class IllegalCharacter(Exception):
+    """An exception for an occurence of a polish character"""
     pass
 
 class Indexer:
-    """Class for generating index files and getting posting lists"""
-    morphologic = {}
+    """A class for generating index files and getting posting lists"""
+    morfologik = {}
     titles = {}
+    document_count = 0
 
     def __init__(self, index_dir = "index", compressed = False, stemmed = False):
         self.stemmed = stemmed
         self.compressed = compressed
         self.index_dir = self.create_index_directory(index_dir)
-        self.document_count = 0
 
     def create_index_directory(self, dirname):
         """Creates the index directory, if it doesn't exist yet"""
@@ -33,18 +38,23 @@ class Indexer:
             os.mkdir(dirname + '/')
         return dirname
 
-    def initialize_morphologic(self, filename, cachefile):
+    def initialize_morfologik(self, morfologik_filename, morfologik_cachefile):
         """Generates morfologic-data dictionary and caches it, restores if it was cached already"""
-        if os.path.exists(cachefile):
-            Indexer.load_dict(cachefile)
+
+        immediate_print("loading morfologik")
+
+        if os.path.exists(morfologik_cachefile):
+            self.morfologik = Indexer.load_dict(morfologik_cachefile)
+            immediate_print("loaded morfologik from the cache")
     
-        if self.morphologic == {}:
-            filehandle = open(filename)
-            for line in filehandle:
+        if self.morfologik == {}:
+            immediate_print("regenerating morfologik")
+            morfologik_handle = open(morfologik_filename, 'r')
+            for line in morfologik_handle:
                 forms = line.split(' ')
                 forms[-1] = forms[-1].rstrip()
-                self.morphologic[forms[0]] = forms[1:]
-            Indexer.dump_dict(self.morphologic, cachefile)
+                self.morfologik[forms[0]] = forms[1:]
+            Indexer.dump_dict(self.morfologik, morfologik_cachefile)
 
     def unsorted_index_path(self):
         """Returns path to the unsorted index file"""
@@ -68,55 +78,59 @@ class Indexer:
 
     def generate_index_file(self, filename):
         """Generates big unsorted index file with the info about all word occurences"""
-        if os.path.exists(self.titles_path()):
-            index_titles = False        
-        else:
-            index_titles = True
-            title_handle = open(self.titles_path(), 'w')
 
         self.document_count = 0
         word_regexp = re.compile(r'\w+')
 
-        filehandle = open(filename)
-                        
-        indexfilehandle = open(self.unsorted_index_path(), 'a') 
+        titles_handle = open(self.titles_path(), 'w')
+        file_handle = open(filename)
+        indexfile_handle = open(self.unsorted_index_path(), 'a') 
+    
+        immediate_print('indexing articles')
 
-        for line in filehandle:
+        ord_a = ord('a')
+        ord_z = ord('z')
+        ord_0 = ord('0')
+        ord_9 = ord('9')
+
+        for line in file_handle:
             if line[:9] == '##TITLE##':
                 if self.document_count % 1000 == 0:
-                    print('indexed ', self.document_count)
-                    sys.stdout.flush()
+                    immediate_print('%(count)d documents indexed' % {'count': self.document_count})
                 self.document_count += 1
-                if index_titles:
-                    title_handle.write(str(self.document_count) + ' ' + line[10:].strip() + '\n' )
+                titles_handle.write("%(count)d %(title)s\n" % {'count': self.document_count, 'title': line[10:].strip()})
             else:
                 for word in word_regexp.findall(line):
                     bases = self.normalize(word)
                     for base in bases:
                         try:
                             for char in base:
-                                if not( (ord(char) >= ord('a') and ord(char) <= ord('z')) or
-                                        (ord(char) >= ord('0') and ord(char) <= ord('9')) or
+                                ord_char = ord(char)
+                                if not ((ord_char >= ord_a and ord_char <= ord_z) or
+                                        (ord_char >= ord_0 and ord_char <= ord_9) or
                                         (char in 'ążęźćśóńł')):
-                                    raise NonPolishCharacter
-                            indexfilehandle.write(base + ' ' + str(self.document_count) + '\n')
-                        except NonPolishCharacter:
+                                    raise IllegalCharacter
+                            indexfile_handle.write("%(base)s %(count)d\n" % {'base': base, 'count': self.document_count})
+                        except IllegalCharacter:
                             pass
 
     def sort_index_file(self):
         """Sorts the big index file"""
+        immediate_print('sorting the index file')
+
         os.system("LC_ALL=C sort -T. -k1,1 -s " + self.unsorted_index_path() + " > " + self.sorted_index_path())
 
     def generate_dicts(self):
         """Generates the three letter dictionary files from the big sorted index file"""
-        index_filehandle = open(self.sorted_index_path())
+        immediate_print('generating dictionaries')
+        
+        indexfile_handle = open(self.sorted_index_path())
         index_dict = {}
         prefix = ""
 
-        for i, line in enumerate(index_filehandle):
+        for i, line in enumerate(indexfile_handle):
             if i % 1000000 == 0:
-                print(str(i) + " parsed lines")
-                sys.stdout.flush()
+                immediate_print( "%(count)d parsed lines" % {'count': i})
             [key, value] = line.split(' ', 1)
             value = int(value.rstrip())
             
@@ -127,8 +141,8 @@ class Indexer:
                 else:
                     index_dict[key] = [value]
             else:
-                if os.path.exists(self.dict_path(prefix)):
-                    print("ERROR: dict file already exists " + self.dict_path(prefix))
+                if os.path.exists(self.dict_path(prefix)) and prefix != "":
+                    immediate_print("ERROR: %(filename)s already exists" % {'filename': self.dict_path(prefix)})
                 if self.compressed:
                     Indexer.dump_dict(Indexer.compress_dict(index_dict), self.dict_path(prefix))
                 else:
@@ -155,41 +169,42 @@ class Indexer:
 
     def dump_titles(self):
         """Dumps titles info into a marshalled file"""
-        titles_filehandle = open(self.titles_path())
+        titles_handle = open(self.titles_path())
         titles_dict = {}
             
-        print("indexing titles")
-        sys.stdout.flush()
+        immediate_print("indexing titles")
 
-        for line in titles_filehandle:
+        for line in titles_handle:
             [key, value] = line.split(' ', 1)
             value = value.rstrip()
             key = int(key)
             titles_dict[key] = value
+        
+        immediate_print("dumping titles")
 
         Indexer.dump_dict(titles_dict, self.titles_dict_path())
 
     @staticmethod
     def dump_dict(dictionary, dict_filename):
-        """Dups a dictionary to a file"""
-        dict_filehandle = open(dict_filename, 'wb')
-        marshal.dump(dictionary, dict_filehandle, 2)
+        """Dumps a dictionary to a file"""
+        dict_handle = open(dict_filename, 'wb')
+        marshal.dump(dictionary, dict_handle, 2)
         
     @staticmethod
     def load_dict(dict_filename):
         """Loads a dictionary from a file"""
-        dict_filehandle = open(dict_filename, 'rb')
-        return marshal.load(dict_filehandle)
+        dict_handle = open(dict_filename, 'rb')
+        return marshal.load(dict_handle)
 
     def normalize(self, word):
         """Normalizes and possibly stems the word"""
         word = word.lower()
         
-        if self.morphologic == {}:
-            self.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt', 'data/morfologik.marshal')
+        if self.morfologik == {}:
+            self.initialize_morfologik('data/morfologik_do_wyszukiwarek.txt', 'data/morfologik.marshal')
 
-        if word in self.morphologic:
-            lemated = self.morphologic[word] 
+        if word in self.morfologik:
+            lemated = self.morfologik[word] 
         else:
             lemated = [word]
 
@@ -205,6 +220,9 @@ class Indexer:
     
     def load_titles(self):
         """Loads the titles count info"""
+
+        immediate_print("loading titles from a file")
+
         filename = self.titles_dict_path()
         self.titles = Indexer.load_dict(filename)
         self.document_count = len(self.titles)
@@ -235,27 +253,13 @@ def main():
     """Does some indexer testing"""
     indexer = Indexer()
 
-    #print('running indexing...')
-    #sys.stdout.flush()
-    #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
-    #print('ok')
+    indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
 
-    print('sorting the index file...')
-    sys.stdout.flush()
     indexer.sort_index_file()
-    print('ok')
 
-    print('generating dictionaries...')
-    sys.stdout.flush()
-    indexer.generate_dicts()
-    print('ok')
+    #indexer.generate_dicts()
 
-    print('generating title dictionary...')
-    sys.stdout.flush()
-    indexer.dump_titles()
-    print('ok')
-
-    print(indexer.get_posting('jest'))
+    #indexer.dump_titles()
 
 if __name__ == "__main__":
     main()
