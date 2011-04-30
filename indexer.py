@@ -167,6 +167,18 @@ class Indexer:
         """Decompresses the posting list from a dictionary with compressed posting lists"""
         return posting
 
+    @staticmethod
+    def differentiate_posting(posting):
+        if not posting == []:
+            counter = 0
+            res = []
+            for elem in posting:
+                res.append(elem - counter)
+                counter = elem
+            return res
+        else:
+            return []
+
     def dump_titles(self):
         """Dumps titles info into a marshalled file"""
         titles_handle = open(self.titles_path())
@@ -253,13 +265,15 @@ def main():
     """Does some indexer testing"""
     indexer = Indexer()
 
-    indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
+    #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
 
-    indexer.sort_index_file()
+    #indexer.sort_index_file()
 
     #indexer.generate_dicts()
 
     #indexer.dump_titles()
+
+    print(Indexer.differentiate_posting([2,2,5,8,10]))
 
 if __name__ == "__main__":
     main()
