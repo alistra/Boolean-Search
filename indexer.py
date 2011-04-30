@@ -10,10 +10,6 @@ def immediate_print(string):
     print(string)
     sys.stdout.flush()
 
-class IllegalCharacter(Exception):
-    """An exception for an occurence of a polish character"""
-    pass
-
 class Indexer:
     """A class for generating index files and getting posting lists"""
     morfologik = {}
@@ -74,7 +70,7 @@ class Indexer:
 
     def dict_path(self, prefix):
         """Returns path to the apropriate dictionary file for a word"""
-        return os.path.join(self.index_dir, prefix + '.marshal')
+        return os.path.join(self.index_dir, '%s.marshal' % prefix)
 
     def generate_index_file(self, filename):
         """Generates big unsorted index file with the info about all word occurences"""
@@ -88,10 +84,7 @@ class Indexer:
     
         immediate_print('indexing articles')
 
-        ord_a = ord('a')
-        ord_z = ord('z')
-        ord_0 = ord('0')
-        ord_9 = ord('9')
+        illegal_char_regexp = re.compile(r'[^1234567890qwertyuiopasdfghjklzxcvbnmęóąśłżźćń]')
 
         for line in file_handle:
             if line[:9] == '##TITLE##':
@@ -103,16 +96,9 @@ class Indexer:
                 for word in word_regexp.findall(line):
                     bases = self.normalize(word)
                     for base in bases:
-                        try:
-                            for char in base:
-                                ord_char = ord(char)
-                                if not ((ord_char >= ord_a and ord_char <= ord_z) or
-                                        (ord_char >= ord_0 and ord_char <= ord_9) or
-                                        (char in 'ążęźćśóńł')):
-                                    raise IllegalCharacter
-                            indexfile_handle.write("%(base)s %(count)d\n" % {'base': base, 'count': self.document_count})
-                        except IllegalCharacter:
-                            pass
+                        if illegal_char_regexp.search(base):
+                            continue
+                        indexfile_handle.write("%(base)s %(count)d\n" % {'base': base, 'count': self.document_count})
 
     def sort_index_file(self):
         """Sorts the big index file"""
@@ -169,6 +155,7 @@ class Indexer:
 
     @staticmethod
     def differentiate_posting(posting):
+        """Differentiaties posting lists"""
         if not posting == []:
             counter = 0
             res = []
@@ -265,15 +252,13 @@ def main():
     """Does some indexer testing"""
     indexer = Indexer()
 
-    #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
+    indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
 
     #indexer.sort_index_file()
 
     #indexer.generate_dicts()
 
     #indexer.dump_titles()
-
-    print(Indexer.differentiate_posting([2,2,5,8,10]))
 
 if __name__ == "__main__":
     main()
