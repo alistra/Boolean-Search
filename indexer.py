@@ -83,8 +83,8 @@ class Indexer:
         word_regexp = re.compile(r'\w+')
 
         titles_handle = open(self.titles_path(), 'w')
-        file_handle = open(filename)
-        indexfile_handle = open(self.unsorted_index_path(), 'a') 
+        file_handle = open(filename, 'r')
+        indexfile_handle = open(self.unsorted_index_path(), 'w') 
     
         immediate_print('indexing articles')
 
