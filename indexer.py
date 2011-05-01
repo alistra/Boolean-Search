@@ -145,16 +145,8 @@ class Indexer:
                     index_dict[key] = [value]
                 prefix = key[:3]
 
-    @staticmethod
-    def compress_dict(dictionary):#stub
-        """Compresses the contents of a dictionary"""
-        return dictionary
-
-    @staticmethod
-    def decompress_posting(posting):#stub
-        """Decompresses the posting list from a dictionary with compressed posting lists"""
-        return posting
-
+        self.dump(index_dict, os.path.join(out_directory, prefix))
+    
     @staticmethod
     def differentiate_posting(posting):
         """Differentiaties posting lists"""
@@ -164,6 +156,19 @@ class Indexer:
             for elem in posting:
                 res.append(elem - counter)
                 counter = elem
+            return res
+        else:
+            return []
+
+    @staticmethod
+    def dedifferentiate_posting(posting):
+        """Dedifferentiates posting lists"""
+        if not posting == []:
+            counter = 0
+            res = []
+            for elem in posting:
+                res.append(elem + counter)
+                counter += elem
             return res
         else:
             return []
@@ -242,8 +247,13 @@ def main():
     #indexer = Indexer()
     indexer = Indexer(compressed = True)
 
-    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
+    #indexer.initialize_morfologik('data/morfologik_do_wyszukiwarek.txt')
+
+    #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
     #indexer.create_index('data/mini_wiki.txt', 'data/morfologik_do_wyszukiwarek.txt')
+    
+    indexer.load_index()
+    print(indexer.get_posting('penis'))
 
 if __name__ == "__main__":
     main()
