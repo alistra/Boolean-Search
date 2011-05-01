@@ -47,7 +47,7 @@ class Indexer:
                 self.morfologik[forms[0]] = forms[1:]
 
     def load_morfologik(self):
-        """Loads dumpef morfologik."""
+        """Loads dumped morfologik."""
         immediate_print("loaded morfologik from the cache")
         self.morfologik = self.load(self.morfologik_path())
 
