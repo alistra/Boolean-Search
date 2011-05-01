@@ -247,30 +247,36 @@ class Indexer:
     def get_posting(self, word):
         """Gets a posting from a marshalled file for a given word"""
         forms = self.normalize(word)
-        res = []
+        res = set()
         for form in forms:
             filename = self.dict_path(form[:3])
             if os.path.exists(filename):
                 prefix_dict = self.load_dict(filename)
                 if form in prefix_dict:
-                    res += prefix_dict[form]
+                    res.update(prefix_dict[form])
         return sorted(res) #maybe try merge_or
-
 
 def main():
     """Does some indexer testing"""
     #indexer = Indexer()
     indexer = Indexer(compressed = True)
 
-    #indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
+    print('initializing morphologic...', end="")
+    sys.stdout.flush()
+    indexer.initialize_morphologic('data/morfologik_do_wyszukiwarek.txt', 'data/morfologik.marshal')
+    print('ok')
+
+    print('running indexing...')
+    sys.stdout.flush()
+    indexer.generate_index_file('data/wikipedia_dla_wyszukiwarek.txt')
+    #indexer.generate_index_file('data/mini_wiki.txt')
+    print('ok')
 
     #indexer.sort_index_file()
 
     #indexer.generate_dicts()
 
     #indexer.dump_titles()
-
-    print(indexer.get_posting('pancernik'))
 
 if __name__ == "__main__":
     main()
