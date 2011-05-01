@@ -8,7 +8,7 @@ def print_results(results):
     print('TOTAL: ', len(results))
     print('\n'.join(results))
 
-s = searcher.Searcher(indexer.Indexer())
+s = searcher.Searcher(indexer.Indexer(compressed = True))
 if len(sys.argv) > 1:
     for query in sys.argv[1:]:
         print('Searching query: ', query)
