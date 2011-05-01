@@ -154,11 +154,8 @@ class Indexer:
             counter = 0
             res = []
             for elem in posting:
-                res.append(elem - counter)
+                yield(elem - counter)
                 counter = elem
-            return res
-        else:
-            return []
 
     @staticmethod
     def dedifferentiate_posting(posting):
@@ -167,11 +164,8 @@ class Indexer:
             counter = 0
             res = []
             for elem in posting:
-                res.append(elem + counter)
+                yield(elem + counter)
                 counter += elem
-            return res
-        else:
-            return []
 
     def dump_titles(self):
         """Dumps titles info into a marshalled file"""
@@ -249,8 +243,16 @@ def main():
 
     #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
 
-    indexer.load_index()
-    print(indexer.get_posting('z'))
+    #indexer.load_index()
+    #print(indexer.get_posting('z'))
+    p = Indexer.differentiate_posting([1,5,8,14])
+    for i in p:
+        print("%d " %i, end="")
+    print()
+    p = Indexer.differentiate_posting([1,5,8,14])
+    for i in Indexer.dedifferentiate_posting(p):
+        print("%d " %i, end="")
+
 
 if __name__ == "__main__":
     main()
