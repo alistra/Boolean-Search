@@ -194,10 +194,10 @@ class Indexer:
         return marshal.load(handle)
 
     def lemmatize(self, word):
-        if self.morfologik != {}:
-            morfologik = self.morfologik
-        else:
-            filename = os.path.join(self.index_dir, "morfologik", word[:3])
+        morfologik = self.morfologik
+        filename = os.path.join(self.index_dir, "morfologik", word[:3])
+        
+        if morfologik == {} and os.path.exists(filename):
             morfologik = self.load(filename)
 
         if word in morfologik:
@@ -247,13 +247,10 @@ def main():
     #indexer = Indexer()
     indexer = Indexer(compressed = True)
 
-    #indexer.initialize_morfologik('data/morfologik_do_wyszukiwarek.txt')
-
     #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
-    #indexer.create_index('data/mini_wiki.txt', 'data/morfologik_do_wyszukiwarek.txt')
-    
+
     indexer.load_index()
-    print(indexer.get_posting('penis'))
+    print(indexer.get_posting('z'))
 
 if __name__ == "__main__":
     main()
