@@ -17,10 +17,11 @@ class Indexer:
     titles = []
     document_count = 0
 
-    def __init__(self, index_dir = "index", compressed = False, stemmed = False):
+    def __init__(self, index_dir = "index", compressed = False, stemmed = False, debug = False):
         self.stemmed = stemmed
         self.compressed = compressed
         self.index_dir = index_dir
+        self.debug = debug
 
     def load_index(self):
         """Load files from index directory."""
@@ -31,22 +32,28 @@ class Indexer:
         if not os.path.exists(self.index_dir):
             os.mkdir(self.index_dir)
 
-        immediate_print("initializing morfologik")
+        if self.debug:
+            immediate_print("initializing morfologik")
         self.initialize_morfologik(morfologik_file)
         
-        immediate_print("gathering document data")
+        if self.debug:
+            immediate_print("gathering document data")
         self.generate_index_file(data_file, 'WORDS')
 
-        immediate_print("sorting document data")
+        if self.debug:
+            immediate_print("sorting document data")
         self.sort_file('WORDS', 'WORDS.sorted')
 
-        immediate_print("generating index")
+        if self.debug:
+            immediate_print("generating index")
         self.generate_dicts('WORDS.sorted', self.index_dir)
 
-        immediate_print("dumping document titles")
+        if self.debug:
+            immediate_print("dumping document titles")
         self.dump_titles()
 
-        immediate_print("sorting morfologik")
+        if self.debug:
+            immediate_print("sorting morfologik")
         self.sort_file(morfologik_file, 'MORFOLOGIK.sorted')
 
         self.generate_dicts("MORFOLOGIK.sorted",
@@ -86,7 +93,7 @@ class Indexer:
 
         for line in file_handle:
             if line[:9] == '##TITLE##':
-                if self.document_count % 1000 == 0:
+                if self.debug and self.document_count % 1000 == 0:
                     immediate_print('%(count)d documents indexed' % {'count': self.document_count})
                 self.document_count += 1
                 self.titles.append(line[10:].strip())
@@ -112,7 +119,7 @@ class Indexer:
         prefix = ""
 
         for i, line in enumerate(indexfile_handle):
-            if i % 1000000 == 0:
+            if self.debug and i % 1000000 == 0:
                 immediate_print( "%(count)d parsed lines" % {'count': i})
             words = line.rstrip().split(' ')
             key = words[0]
@@ -131,7 +138,7 @@ class Indexer:
                     else:
                         index_dict[key] = [value]
             else:
-                if os.path.exists(os.path.join(out_directory, prefix)) and prefix != "":
+                if self.debug and os.path.exists(os.path.join(out_directory, prefix)) and prefix != "":
                     immediate_print("ERROR: %(filename)s already exists"
                             % {'filename': self.dict_path(prefix)})
 
@@ -215,7 +222,8 @@ class Indexer:
     
     def load_titles(self):
         """Loads the titles count info"""
-        immediate_print("loading titles from a file")
+        if self.debug:
+            immediate_print("loading titles from a file")
         filename = self.titles_path()
         self.titles = self.load(filename)
         self.document_count = len(self.titles)
@@ -239,20 +247,10 @@ class Indexer:
 def main():
     """Does some indexer testing"""
     #indexer = Indexer()
-    indexer = Indexer(compressed = True)
+    indexer = Indexer(compressed = True, debug = True)
 
-    #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
+    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
 
-    #indexer.load_index()
-    #print(indexer.get_posting('z'))
-    p = Indexer.differentiate_posting([1,5,8,14])
-    for i in p:
-        print("%d " %i, end="")
-    print()
-    p = Indexer.differentiate_posting([1,5,8,14])
-    for i in Indexer.dedifferentiate_posting(p):
-        print("%d " %i, end="")
-
-
+    indexer.load_index()
 if __name__ == "__main__":
     main()
