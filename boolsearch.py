@@ -29,3 +29,5 @@ else:
         except KeyboardInterrupt:
             print('exiting')
             break
+        except EOFError:
+            break
