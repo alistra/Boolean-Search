@@ -10,7 +10,7 @@ except:
 
 def print_results(results):
     """Prints the result of a query"""
-    print('TOTAL: ', len(results))
+    print('TOTAL:', len(results))
     print('\n'.join(results))
 
 indexer = indexer.Indexer(compressed = True)
@@ -24,7 +24,8 @@ if len(sys.argv) > 1:
 else:
     while True:
         try:
-            query = input('query: ')
+            query = input()
+            print('QUERY:', query, end=' ')
             print_results(s.search(query))
         except KeyboardInterrupt:
             print('exiting')
