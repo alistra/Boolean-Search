@@ -200,14 +200,14 @@ class Indexer:
             handle = open(filename, 'rb')
         return marshal.load(handle)
 
-    def load_to_cache(self, cache, word, filename):
+    def load_to_cache(self, cache, limit, word, filename):
         prefix = word[:3]
         if prefix in cache:
             d = cache.pop(prefix)
             cache[prefix] = d
             return d
         elif os.path.exists(filename):
-                while len(cache) >= 60:
+                while len(cache) >= limit:
                     cache.popitem(False)
                 d = self.load(filename)
                 cache[prefix] = d
@@ -220,7 +220,8 @@ class Indexer:
             morfologik = self.morfologik
         else:
             filename = os.path.join(self.index_dir, "morfologik", word[:3])
-            morfologik = self.load_to_cache(self.morfologik_cache, word, filename)
+            morfologik = self.load_to_cache(self.morfologik_cache, 90,
+                    word, filename)
         
         return morfologik.get(word, [word])
 
@@ -256,7 +257,7 @@ class Indexer:
         res = set()
         for form in forms:
             filename = os.path.join(self.index_dir, form[:3])
-            index = self.load_to_cache(self.index_cache, form, filename)
+            index = self.load_to_cache(self.index_cache, 20, form, filename)
             if form in index:
                 res.update(index[form])
         return sorted(res) #maybe try merge_or
