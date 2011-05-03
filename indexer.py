@@ -42,11 +42,17 @@ class Indexer:
 
         if self.debug:
             immediate_print("sorting document data")
-        self.sort_file('WORDS', 'WORDS.sorted')
+        Indexer.sort_file('WORDS', 'WORDS.sorted')
+
+        if not self.debug:
+            os.remove('WORDS')
 
         if self.debug:
             immediate_print("generating index")
         self.generate_dicts('WORDS.sorted', self.index_dir)
+
+        if not self.debug:
+            os.remove('WORDS.sorted')
 
         if self.debug:
             immediate_print("dumping document titles")
@@ -54,10 +60,13 @@ class Indexer:
 
         if self.debug:
             immediate_print("sorting morfologik")
-        self.sort_file(morfologik_file, 'MORFOLOGIK.sorted')
+        Indexer.sort_file(morfologik_file, 'MORFOLOGIK.sorted')
 
         self.generate_dicts("MORFOLOGIK.sorted",
                 os.path.join(self.index_dir, "morfologik"), True)
+
+        if not self.debug:
+            os.remove('MORFOLOGIK.sorted')
 
     def initialize_morfologik(self, morfologik_filename):
         """Generates morfologic-data dictionary and caches it, restores if it was cached already"""
@@ -104,8 +113,8 @@ class Indexer:
                         if illegal_char_regexp.search(base):
                             continue
                         indexfile_handle.write("%(base)s %(count)d\n" % {'base': base, 'count': self.document_count})
-
-    def sort_file(self, filename, dest):
+    @staticmethod
+    def sort_file(filename, dest):
         """Sorts the big index file"""
         os.system("LC_ALL=C sort -T. -k1,1 -s " + filename + " > " + dest)
 
@@ -138,13 +147,8 @@ class Indexer:
                     else:
                         index_dict[key] = [value]
             else:
-                if self.debug and os.path.exists(os.path.join(out_directory, prefix)) and prefix != "":
-                    immediate_print("ERROR: %(filename)s already exists"
-                            % {'filename': self.dict_path(prefix)})
-
                 if prefix != "":
                     self.dump(index_dict, os.path.join(out_directory, prefix))
-
                 index_dict.clear()
                 if morfologik:
                     index_dict[key] = value
@@ -159,7 +163,6 @@ class Indexer:
         """Differentiaties posting lists"""
         if not posting == []:
             counter = 0
-            res = []
             for elem in posting:
                 yield(elem - counter)
                 counter = elem
@@ -169,7 +172,6 @@ class Indexer:
         """Dedifferentiates posting lists"""
         if not posting == []:
             counter = 0
-            res = []
             for elem in posting:
                 yield(elem + counter)
                 counter += elem
@@ -195,6 +197,7 @@ class Indexer:
         return marshal.load(handle)
 
     def lemmatize(self, word):
+        """Lemmatize a word"""
         morfologik = self.morfologik
         filename = os.path.join(self.index_dir, "morfologik", word[:3])
         
