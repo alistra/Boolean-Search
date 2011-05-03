@@ -92,22 +92,43 @@ class Searcher:
             return SearchResult(self.subtract(res2.docs, res1.docs), True)
         else:
             # x | y
-            d1 = res1.docs
-            d2 = res2.docs
-            i1 = i2 = 0
+            d1 = iter(res1.docs)
+            d2 = iter(res2.docs)
             res = []
-            while i1 < len(d1) and i2 < len(d2):
-                if d1[i1] < d2[i2]:
-                    res.append(d1[i1])
-                    i1 += 1
-                elif d1[i1] > d2[i2]:
-                    res.append(d2[i2])
-                    i2 += 1
-                else:
-                    res.append(d1[i1])
-                    i1 += 1
-                    i2 += 1
-            return SearchResult(res + d1[i1:] + d2[i2:], False)
+            last_added = -1
+            e1 = None
+            e2 = None
+            try:
+                e1 = d1.__next__()
+                e2 = d2.__next__()
+                while True:
+                    if e1 < e2:
+                        res.append(e1)
+                        last_added = e1
+                        e1 = d1.__next__()
+                    elif e1 > e2:
+                        res.append(e2)
+                        last_added = e2
+                        e2 = d2.__next__()
+                    else:
+                        res.append(e1)
+                        last_added = e1
+                        e1 = d1.__next__()
+                        e2 = d2.__next__()
+            except StopIteration:
+                if e1 and e2:
+                    t1 = min(e1,e2)
+                    t2 = max(e1,e2)
+                    if t1 > last_added:
+                        res += [t1,t2]
+                    elif t2 > last_added:
+                        res += [t2]
+                elif e1 and e1 > last_added:
+                    res += [e1]
+                elif e2 and e2 > last_added:
+                    res += [e2]
+
+                return SearchResult(res + list(d1) + list(d2), False)
 
     def merge_and(self, res1, res2):
         """Merges with AND two search results in O(m + n) time."""
@@ -156,17 +177,22 @@ class Searcher:
         """subtracts two lists in O(m + n) time."""
         # x \ y
         res = []
-        i1 = i2 = 0
-        while i1 < len(d1) and i2 < len(d2):
-            if d1[i1] < d2[i2]:
-                res.append(d1[i1])
-                i1 += 1
-            elif d1[i1] > d2[i2]:
-                i2 += 1
-            else:
-                i1 += 1
-                i2 += 1
-        return res + d1[i1:]
+        d1 = iter(d1)
+        d2 = iter(d2)
+        try:
+            e1 = d1.__next__()
+            e2 = d2.__next__()
+            while True:
+                if e1 < e2:
+                    res.append(e1)
+                    e1 = d1.__next__()
+                elif e1 > e2:
+                    e2 = d2.__next__()
+                else:
+                    e2 = d2.__next__()
+                    e1 = d1.__next__()
+        except StopIteration:
+            return res
 
 class QueryTest(unittest.TestCase):
     def test_phrase(self):
