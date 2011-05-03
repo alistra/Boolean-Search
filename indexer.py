@@ -204,10 +204,7 @@ class Indexer:
         if morfologik == {} and os.path.exists(filename):
             morfologik = self.load(filename)
 
-        if word in morfologik:
-            return morfologik[word] 
-        else:
-            return [word]
+        return morfologik.get(word, [word])
 
     def normalize(self, word):
         """Normalizes and possibly stems the word"""
