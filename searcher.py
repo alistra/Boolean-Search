@@ -94,7 +94,6 @@ class Searcher:
             # x | y
             d1 = iter(res1.docs)
             d2 = iter(res2.docs)
-            res = []
             last_added = -1
             e1 = None
             e2 = None
@@ -103,15 +102,15 @@ class Searcher:
                 e2 = d2.__next__()
                 while True:
                     if e1 < e2:
-                        res.append(e1)
+                        yield(e1)
                         last_added = e1
                         e1 = d1.__next__()
                     elif e1 > e2:
-                        res.append(e2)
+                        yield(e2)
                         last_added = e2
                         e2 = d2.__next__()
                     else:
-                        res.append(e1)
+                        yield(e1)
                         last_added = e1
                         e1 = d1.__next__()
                         e2 = d2.__next__()
@@ -120,14 +119,20 @@ class Searcher:
                     t1 = min(e1,e2)
                     t2 = max(e1,e2)
                     if t1 > last_added:
-                        res += [t1,t2]
+                        yield(t1)
+                        if t1 != t2:
+                            yield(t2)
                     elif t2 > last_added:
-                        res += [t2]
+                        yield(t2)
                 elif e1 and e1 > last_added:
-                    res += [e1]
+                    yield(e1)
                 elif e2 and e2 > last_added:
-                    res += [e2]
+                    yield(e2)
 
+            for i in d1:
+                yield(i)
+            for i in d2:
+                yield(i)
                 return SearchResult(res + list(d1) + list(d2), False)
 
     def merge_and(self, res1, res2):
@@ -148,7 +153,6 @@ class Searcher:
             # x & y
             d1 = iter(res1.docs)
             d2 = iter(res2.docs)
-            res = []
             try:
                 e1 = d1.__next__()
                 e2 = d2.__next__()
@@ -158,25 +162,24 @@ class Searcher:
                     elif e1 > e2:
                         e2 = d2.__next__()
                     else:
-                        res.append(e1)
+                        yield(e1)
                         e1 = d1.__next__()
                         e2 = d2.__next__()
             except StopIteration:
-                return SearchResult(res, False)
+                pass
 
     def subtract_from_uni(self, document_count, d):
-        res = []
         start = 1
         for n in d:
-            res += range(start,n)
+            for i in range(start,n)
+                yield(i)
             start = n+1
-        res += range(start, document_count)
-        return res
+        for i in range(start, document_count)
+            yield(i)
 
     def subtract(self, d1, d2):
         """subtracts two lists in O(m + n) time."""
         # x \ y
-        res = []
         d1 = iter(d1)
         d2 = iter(d2)
         try:
@@ -184,7 +187,7 @@ class Searcher:
             e2 = d2.__next__()
             while True:
                 if e1 < e2:
-                    res.append(e1)
+                    yield(e1)
                     e1 = d1.__next__()
                 elif e1 > e2:
                     e2 = d2.__next__()
@@ -192,7 +195,7 @@ class Searcher:
                     e2 = d2.__next__()
                     e1 = d1.__next__()
         except StopIteration:
-            return res
+            pass
 
 class QueryTest(unittest.TestCase):
     def test_phrase(self):
