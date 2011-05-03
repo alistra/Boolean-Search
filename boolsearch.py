@@ -32,3 +32,7 @@ else:
             break
         except EOFError:
             break
+
+
+print('morfologik cache:', len(indexer.morfologik_cache))
+print('index cache:', len(indexer.index_cache))
