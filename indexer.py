@@ -5,6 +5,8 @@ import re
 import marshal
 import sys
 import gzip
+import time
+import collections
 
 def immediate_print(string):
     """A function to print and flush the stdout immediately"""
@@ -14,6 +16,8 @@ def immediate_print(string):
 class Indexer:
     """A class for generating index files and getting posting lists"""
     morfologik = {}
+    morfologik_cache = collections.OrderedDict()
+    index_cache = collections.OrderedDict()
     titles = []
     document_count = 0
 
@@ -196,14 +200,28 @@ class Indexer:
             handle = open(filename, 'rb')
         return marshal.load(handle)
 
+    def load_to_cache(self, cache, word, filename):
+        prefix = word[:3]
+        if prefix in cache:
+            d = cache.pop(prefix)
+            cache[prefix] = d
+            return d
+        elif os.path.exists(filename):
+                while len(cache) >= 60:
+                    cache.popitem(False)
+                d = self.load(filename)
+                cache[prefix] = d
+                return d
+        return {}
+
     def lemmatize(self, word):
         """Lemmatize a word"""
-        morfologik = self.morfologik
-        filename = os.path.join(self.index_dir, "morfologik", word[:3])
+        if self.morfologik != {}:
+            morfologik = self.morfologik
+        else:
+            filename = os.path.join(self.index_dir, "morfologik", word[:3])
+            morfologik = self.load_to_cache(self.morfologik_cache, word, filename)
         
-        if morfologik == {} and os.path.exists(filename):
-            morfologik = self.load(filename)
-
         return morfologik.get(word, [word])
 
     def normalize(self, word):
@@ -238,10 +256,9 @@ class Indexer:
         res = set()
         for form in forms:
             filename = os.path.join(self.index_dir, form[:3])
-            if os.path.exists(filename):
-                prefix_dict = self.load(filename)
-                if form in prefix_dict:
-                    res.update(prefix_dict[form])
+            index = self.load_to_cache(self.index_cache, form, filename)
+            if form in index:
+                res.update(index[form])
         return sorted(res) #maybe try merge_or
 
 def main():
