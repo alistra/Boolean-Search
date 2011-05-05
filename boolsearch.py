@@ -13,7 +13,7 @@ def print_results(results):
     print('TOTAL:', len(results))
     print('\n'.join(results))
 
-indexer = indexer.Indexer(compressed = True)
+indexer = indexer.Indexer(compressed = False)
 indexer.load_index()
 s = searcher.Searcher(indexer)
 

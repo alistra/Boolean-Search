@@ -207,11 +207,11 @@ class Indexer:
             cache[prefix] = d
             return d
         elif os.path.exists(filename):
-                while len(cache) >= limit:
-                    cache.popitem(False)
-                d = self.load(filename)
-                cache[prefix] = d
-                return d
+            while len(cache) >= limit:
+                cache.popitem(False)
+            d = self.load(filename)
+            cache[prefix] = d
+            return d
         return {}
 
     def lemmatize(self, word):
@@ -235,9 +235,28 @@ class Indexer:
             return lemmated
     
     @staticmethod
-    def stem(word): #stub
+    def stem(word):
         """Stems the word"""
-        return word
+        if len(word) <= 3:
+            return word
+
+        m = re.match(r'(.*)(logia|janin|owanie)$', word)
+        if m:
+            return m.group(1)
+        m = re.match(r'(.*)(czyk|rzeć|arty|enie|ślać|acja|ować)$', word)
+        if m:
+            return m.group(1)
+        m = re.match(r'(.*)(ość|cie|ski|cie|ium|owy|jać|ent|nie|lać|ieć|nąć|izm|iel|yzm|acz)$', word)
+        if m:
+            return m.group(1)
+        m = re.match(r'(.*)(ny|ić|ać|na|eć|ki|yć|ek|yk|ik|ów)$', word)
+        if m:
+            return m.group(1)
+        m = re.match(r'(.*)(a|y|e|o)$', word)
+        if m:
+            return m.group(1)
+        else:
+            return word
     
     def load_titles(self):
         """Loads the titles count info"""
@@ -265,7 +284,7 @@ class Indexer:
 def main():
     """Does some indexer testing"""
     #indexer = Indexer()
-    indexer = Indexer(compressed = True, debug = True)
+    indexer = Indexer(compressed = False, debug = True)
 
     indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
 
