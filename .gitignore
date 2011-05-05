@@ -5,3 +5,6 @@ index_CS/
 index_S/
 *.pyc
 *.pyo
+doc/*.aux
+doc/*.log
+
