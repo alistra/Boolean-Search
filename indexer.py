@@ -6,7 +6,6 @@ import marshal
 import sys
 import gzip
 import time
-import collections
 
 def immediate_print(string):
     """A function to print and flush the stdout immediately"""
@@ -16,8 +15,8 @@ def immediate_print(string):
 class Indexer:
     """A class for generating index files and getting posting lists"""
     morfologik = {}
-    morfologik_cache = collections.OrderedDict()
-    index_cache = collections.OrderedDict()
+    morfologik_cache = {}
+    index_cache = {}
     titles = []
     document_count = 0
 
@@ -26,10 +25,6 @@ class Indexer:
         self.compressed = compressed
         self.index_dir = index_dir
         self.debug = debug
-
-    def load_index(self):
-        """Load files from index directory."""
-        self.load_titles()
 
     def create_index(self, data_file, morfologik_file):
         """Create new index."""
@@ -200,28 +195,29 @@ class Indexer:
             handle = open(filename, 'rb')
         return marshal.load(handle)
 
-    def load_to_cache(self, cache, limit, word, filename):
-        prefix = word[:3]
-        if prefix in cache:
-            d = cache.pop(prefix)
-            cache[prefix] = d
-            return d
-        elif os.path.exists(filename):
-                while len(cache) >= limit:
-                    cache.popitem(False)
-                d = self.load(filename)
-                cache[prefix] = d
-                return d
-        return {}
+    def load_to_morfologik_cache(self, words):
+        for word in words:
+            filename = os.path.join(self.index_dir, 'morfologik', word[:3])
+            self.load_to_cache(self.morfologik_cache, word, filename)
+
+    def load_to_index_cache(self, words):
+        for word in words:
+            for base in self.normalize(word):
+                filename = os.path.join(self.index_dir, word[:3])
+                self.load_to_cache(self.index_cache, word, filename)
+
+    def load_to_cache(self, cache, word, filename):
+        if word not in cache and os.path.exists(filename):
+            d = self.load(filename)
+            if word in d:
+                cache[word] = d[word]
 
     def lemmatize(self, word):
         """Lemmatize a word"""
         if self.morfologik != {}:
             morfologik = self.morfologik
         else:
-            filename = os.path.join(self.index_dir, "morfologik", word[:3])
-            morfologik = self.load_to_cache(self.morfologik_cache, 90,
-                    word, filename)
+            morfologik = self.morfologik_cache
         
         return morfologik.get(word, [word])
 
@@ -253,14 +249,7 @@ class Indexer:
 
     def get_posting(self, word):
         """Gets a posting from a marshalled file for a given word"""
-        forms = self.normalize(word)
-        res = set()
-        for form in forms:
-            filename = os.path.join(self.index_dir, form[:3])
-            index = self.load_to_cache(self.index_cache, 20, form, filename)
-            if form in index:
-                res.update(index[form])
-        return sorted(res) #maybe try merge_or
+        return self.index_cache.get(word, [])
 
 def main():
     """Does some indexer testing"""
