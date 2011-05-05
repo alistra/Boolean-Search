@@ -15,8 +15,10 @@ def immediate_print(string):
 class Indexer:
     """A class for generating index files and getting posting lists"""
     morfologik = {}
+
     morfologik_cache = {}
     index_cache = {}
+
     titles = []
     document_count = 0
 
@@ -195,22 +197,22 @@ class Indexer:
             handle = open(filename, 'rb')
         return marshal.load(handle)
 
-    def load_to_morfologik_cache(self, words):
-        for word in words:
-            filename = os.path.join(self.index_dir, 'morfologik', word[:3])
-            self.load_to_cache(self.morfologik_cache, word, filename)
+    def load_to_morfologik_cache(self, words, prefix):
+        if words != []:
+            filename = os.path.join(self.index_dir, 'morfologik', prefix)
+            self.load_to_cache(self.morfologik_cache, words, filename)
 
-    def load_to_index_cache(self, words):
-        for word in words:
-            for base in self.normalize(word):
-                filename = os.path.join(self.index_dir, word[:3])
-                self.load_to_cache(self.index_cache, word, filename)
+    def load_to_index_cache(self, words, prefix):
+        if words != []:
+            filename = os.path.join(self.index_dir, prefix)
+            self.load_to_cache(self.index_cache, words, filename)
 
-    def load_to_cache(self, cache, word, filename):
-        if word not in cache and os.path.exists(filename):
+    def load_to_cache(self, cache, words, filename):
+        if os.path.exists(filename):
             d = self.load(filename)
-            if word in d:
-                cache[word] = d[word]
+            for word in words:
+                if word in d:
+                    cache[word] = d[word]
 
     def lemmatize(self, word):
         """Lemmatize a word"""
