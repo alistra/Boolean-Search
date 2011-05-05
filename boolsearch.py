@@ -8,27 +8,35 @@ try:
 except:
     pass
 
-def print_results(results):
-    """Prints the result of a query"""
-    print('TOTAL:', len(results))
-    print('\n'.join(results))
+i = indexer.Indexer()
+s = searcher.Searcher(i)
 
-indexer = indexer.Indexer(compressed = False)
-indexer.load_index()
-s = searcher.Searcher(indexer)
+queries = []
+results = []
 
-if len(sys.argv) > 1:
-    for query in sys.argv[1:]:
-        print('Searching query: ', query)
-        print_results(s.search(query))
-else:
-    while True:
-        try:
-            query = input()
-            print('QUERY:', query, end=' ')
-            print_results(s.search(query))
-        except KeyboardInterrupt:
-            print('exiting')
-            break
-        except EOFError:
-            break
+print('normalizing')
+
+while True:
+    try:
+        query = searcher.Query(input())
+        i.load_to_morfologik_cache(query.get_words())
+        i.load_to_index_cache(query.get_words())
+        queries.append(query)
+    except EOFError:
+        break
+
+print('searching')
+
+for query in queries:
+    results.append(s.search(query))
+
+i.morfologik_cache.clear()
+i.index_cache.clear()
+i.load_titles()
+
+print('printing')
+
+for res in results:
+    print('QUERY:', query, 'TOTAL:', len(res))
+    for doc in res:
+        print(i.get_title(doc))

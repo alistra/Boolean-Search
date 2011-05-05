@@ -29,6 +29,27 @@ class Query:
         self.clauses = [clause.split('|') for clause in cnf.split(' ') 
                 if clause != '']
 
+    def get_words(self):
+        if self.type == 'cnf':
+            for clause in self.clauses:
+                for term in clause:
+                    if term[0] == '~':
+                        yield term[1:]
+                    else:
+                        yield term
+        elif self.type == 'phrase' :
+            for term in self.terms:
+                if term[0] == '~':
+                    yield term[1:]
+                else:
+                    yield term
+
+    def __str__(self):
+        if self.type == 'cnf':
+            return ' '.join(['|'.join(c) for c in self.clauses])
+        elif self.type == 'phrase':
+            return '"' + ' '.join(self.terms) + '"'
+
 class SearchResult:
     def __init__(self, docs = {}, negation = False):
         self.docs = docs
@@ -38,8 +59,7 @@ class Searcher:
     def __init__(self, indexer):
         self.indexer = indexer
 
-    def search(self, s):
-        query = Query(s)
+    def search(self, query):
         if query.type == "cnf":
             results = self.search_cnf(query)
             if results.negation:
@@ -49,7 +69,7 @@ class Searcher:
         else:
             docs = []
 
-        return list(map(self.indexer.get_title, docs))
+        return docs
 
     def search_cnf(self, query):
         clause_results = [self.search_clause(clause)
@@ -72,9 +92,20 @@ class Searcher:
 
     def search_term(self, term):
         if term[0] == '~':
-            return SearchResult(self.indexer.get_posting(term[1:]), True)
+            neg = True
+            word = term[1:]
         else:
-            return SearchResult(self.indexer.get_posting(term), False)
+            neg = False
+            word = term
+
+        postings = [SearchResult(self.indexer.get_posting(form), False)
+            for form in self.indexer.normalize(word)]   
+       
+        res = postings[0]
+        for pos in postings[1:]:
+                res = self.merge_or(res, pos)
+        res.negation = neg
+        return res
 
     def merge_or(self, res1, res2):
         """Merges with OR two search results in O(m + n) time."""
