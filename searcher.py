@@ -124,46 +124,50 @@ class Searcher:
             return SearchResult(self.subtract(res2.docs, res1.docs), True)
         else:
             # x | y
-            return SearchResult(self.merge_or_docs(res1.docs, res2.docs), False)
+            return SearchResult(self.merge_or_docs(res2.docs, res1.docs), False)
 
     def merge_or_docs(self, docs1, docs2):
-        d1 = iter(docs1)
-        d2 = iter(docs2)
-        res = []
-        last_added = -1
-        e1 = None
-        e2 = None
-        try:
-            e1 = d1.__next__()
-            e2 = d2.__next__()
-            while True:
-                if e1 < e2:
-                    res.append(e1)
-                    last_added = e1
-                    e1 = d1.__next__()
-                elif e1 > e2:
-                    res.append(e2)
-                    last_added = e2
-                    e2 = d2.__next__()
-                else:
-                    res.append(e1)
-                    last_added = e1
-                    e1 = d1.__next__()
-                    e2 = d2.__next__()
-        except StopIteration:
-            if e1 and e2:
-                t1 = min(e1,e2)
-                t2 = max(e1,e2)
-                if t1 > last_added:
-                    res += [t1,t2]
-                elif t2 > last_added:
-                    res += [t2]
-            elif e1 and e1 > last_added:
-                res += [e1]
-            elif e2 and e2 > last_added:
-                res += [e2]
+            d1 = iter(docs1)
+            d2 = iter(docs2)
+            last_added = -1
+            e1 = None
+            e2 = None
+            try:
+                e1 = d1.__next__()
+                e2 = d2.__next__()
+                while True:
+                    if e1 < e2:
+                        yield(e1)
+                        last_added = e1
+                        e1 = d1.__next__()
+                    elif e1 > e2:
+                        yield(e2)
+                        last_added = e2
+                        e2 = d2.__next__()
+                    else:
+                        yield(e1)
+                        last_added = e1
+                        e1 = d1.__next__()
+                        e2 = d2.__next__()
+            except StopIteration:
+                if e1 and e2:
+                    t1 = min(e1,e2)
+                    t2 = max(e1,e2)
+                    if t1 > last_added:
+                        yield(t1)
+                        if t1 != t2:
+                            yield(t2)
+                    elif t2 > last_added:
+                        yield(t2)
+                elif e1 and e1 > last_added:
+                    yield(e1)
+                elif e2 and e2 > last_added:
+                    yield(e2)
 
-            return res + list(d1) + list(d2)
+            for i in d1:
+                yield(i)
+            for i in d2:
+                yield(i)
 
     def merge_and(self, res1, res2):
         """Merges with AND two search results in O(m + n) time."""
@@ -184,14 +188,42 @@ class Searcher:
             return SearchResult(self.merge_and_docs(res1.docs, res2.docs), False)
 
     def merge_and_docs(self, docs1, docs2):
-        iter1 = iter(docs1)
-        iter2 = iter(docs2)
-        e1 = next(iter1)
-        e2 = next(iter2)
+            d1 = iter(docs1)
+            d2 = iter(docs2)
+            try:
+                e1 = next(d1)
+                e2 = next(d2)
+                while True:
+                    if e1 < e2:
+                        e1 = next(d1)
+                    elif e1 > e2:
+                        e2 = next(d2)
+                    else:
+                        yield(e1)
+                        e1 = next(d1)
+                        e2 = next(d2)
+            except StopIteration:
+                pass
+
+    def subtract_from_uni(self, document_count, d):
+        start = 1
+        for n in d:
+            for i in range(start,n):
+                yield(i)
+            start = n+1
+        for i in range(start, document_count):
+            yield(i)
+
+    def subtract(self, d1, d2):
+        """subtracts two lists in O(m + n) time."""
+        # x \ y
+        d1 = iter(d1)
+        d2 = iter(d2)
         try:
             while True:
                 if e1 < e2:
-                    e1 = next(iter1)
+                    yield(e1)
+                    e1 = d1.__next__()
                 elif e1 > e2:
                     e2 = next(iter2)
                 else:
@@ -212,11 +244,6 @@ class Searcher:
             else:
                 while d[i] < n:
                     i += 1
-
-    def subtract(self, d1, d2):
-        """subtracts two lists in O(m + n) time."""
-        # x \ y
-        yield 0
 
 class QueryTest(unittest.TestCase):
     def test_phrase(self):
