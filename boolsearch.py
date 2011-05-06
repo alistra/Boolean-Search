@@ -54,9 +54,10 @@ def search(s, i, num):
 
     print('printing')
 
-    for res in results:
-        print('QUERY:', query, 'TOTAL:', len(res))
-        for doc in res:
+    for nr in range(len(results)):
+        res_list = list(results[nr])
+        print('QUERY:', queries[nr], 'TOTAL:', len(res_list))
+        for doc in res_list:
             print(i.get_title(doc))
 
     return not eof
