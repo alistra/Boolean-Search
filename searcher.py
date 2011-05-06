@@ -133,22 +133,22 @@ class Searcher:
             e1 = None
             e2 = None
             try:
-                e1 = d1.__next__()
-                e2 = d2.__next__()
+                e1 = next(d1)
+                e2 = next(d2)
                 while True:
                     if e1 < e2:
                         yield(e1)
                         last_added = e1
-                        e1 = d1.__next__()
+                        e1 = next(d1)
                     elif e1 > e2:
                         yield(e2)
                         last_added = e2
-                        e2 = d2.__next__()
+                        e2 = next(d2)
                     else:
                         yield(e1)
                         last_added = e1
-                        e1 = d1.__next__()
-                        e2 = d2.__next__()
+                        e1 = next(d1)
+                        e2 = next(d2)
             except StopIteration:
                 if e1 and e2:
                     t1 = min(e1,e2)
@@ -220,19 +220,20 @@ class Searcher:
         d1 = iter(d1)
         d2 = iter(d2)
         try:
+            e2 = next(d2)
+            e1 = next(d1)
             while True:
                 if e1 < e2:
                     yield(e1)
-                    e1 = d1.__next__()
+                    e1 = next(d1)
                 elif e1 > e2:
-                    e2 = next(iter2)
+                    e2 = next(d2)
                 else:
-                    yield e1
-                    e1 = next(iter1)
-                    e2 = next(iter2)
+                    e2 = next(d2)
+                    e1 = next(d1)
         except StopIteration:
-            # one iter is empty, so there are no common elements
-            pass
+            for e1 in d1:
+                yield e1
 
     def subtract_from_uni(self, N, d):
         e2 = next(d)
