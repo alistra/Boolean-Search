@@ -28,8 +28,6 @@ def search(s, i, num):
             eof = True
             break
 
-    print('normalizing')
-
     for prefix in query_words:
         words = query_words[prefix]
         i.load_to_morfologik_cache(words, prefix)
@@ -37,12 +35,8 @@ def search(s, i, num):
             for base in i.normalize(word):
                 query_normalized_words.setdefault(base[:3], set()).add(base)
             
-    print('loading index')
-
     for prefix in query_normalized_words:
         i.load_to_index_cache(query_normalized_words[prefix], prefix)
-
-    print('searching')
 
     for query in queries:
         results.append(s.search(query))
@@ -51,8 +45,6 @@ def search(s, i, num):
     i.index_cache.clear()
 
     i.load_titles()
-
-    print('printing')
 
     for nr in range(len(results)):
         res_list = list(results[nr])
@@ -65,5 +57,10 @@ def search(s, i, num):
 i = indexer.Indexer(compressed = True)
 s = searcher.Searcher(i)
 
-while search(s, i, 1000):
+if len(sys.argv) > 1 and sys.argv[1] == 'i':
+    n = 1
+else:
+    n = 1000
+
+while search(s, i, n):
     pass
