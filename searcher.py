@@ -63,7 +63,8 @@ class Searcher:
         if query.type == "cnf":
             results = self.search_cnf(query)
             if results.negation:
-                docs = self.subtract_from_uni(self.indexer.document_count + 1, results.docs)
+                docs = self.subtract_from_uni(self.indexer.document_count,
+                        results.docs)
             else:
                 docs = results.docs
         else:
@@ -123,43 +124,46 @@ class Searcher:
             return SearchResult(self.subtract(res2.docs, res1.docs), True)
         else:
             # x | y
-            d1 = iter(res1.docs)
-            d2 = iter(res2.docs)
-            res = []
-            last_added = -1
-            e1 = None
-            e2 = None
-            try:
-                e1 = d1.__next__()
-                e2 = d2.__next__()
-                while True:
-                    if e1 < e2:
-                        res.append(e1)
-                        last_added = e1
-                        e1 = d1.__next__()
-                    elif e1 > e2:
-                        res.append(e2)
-                        last_added = e2
-                        e2 = d2.__next__()
-                    else:
-                        res.append(e1)
-                        last_added = e1
-                        e1 = d1.__next__()
-                        e2 = d2.__next__()
-            except StopIteration:
-                if e1 and e2:
-                    t1 = min(e1,e2)
-                    t2 = max(e1,e2)
-                    if t1 > last_added:
-                        res += [t1,t2]
-                    elif t2 > last_added:
-                        res += [t2]
-                elif e1 and e1 > last_added:
-                    res += [e1]
-                elif e2 and e2 > last_added:
-                    res += [e2]
+            return SearchResult(self.merge_or_docs(res1.docs, res2.docs), False)
 
-                return SearchResult(res + list(d1) + list(d2), False)
+    def merge_or_docs(self, docs1, docs2):
+        d1 = iter(docs1)
+        d2 = iter(docs2)
+        res = []
+        last_added = -1
+        e1 = None
+        e2 = None
+        try:
+            e1 = d1.__next__()
+            e2 = d2.__next__()
+            while True:
+                if e1 < e2:
+                    res.append(e1)
+                    last_added = e1
+                    e1 = d1.__next__()
+                elif e1 > e2:
+                    res.append(e2)
+                    last_added = e2
+                    e2 = d2.__next__()
+                else:
+                    res.append(e1)
+                    last_added = e1
+                    e1 = d1.__next__()
+                    e2 = d2.__next__()
+        except StopIteration:
+            if e1 and e2:
+                t1 = min(e1,e2)
+                t2 = max(e1,e2)
+                if t1 > last_added:
+                    res += [t1,t2]
+                elif t2 > last_added:
+                    res += [t2]
+            elif e1 and e1 > last_added:
+                res += [e1]
+            elif e2 and e2 > last_added:
+                res += [e2]
+
+            return res + list(d1) + list(d2)
 
     def merge_and(self, res1, res2):
         """Merges with AND two search results in O(m + n) time."""
@@ -177,53 +181,42 @@ class Searcher:
             return SearchResult(self.subtract(res1.docs, res2.docs), False)
         else:
             # x & y
-            d1 = iter(res1.docs)
-            d2 = iter(res2.docs)
-            res = []
-            try:
-                e1 = d1.__next__()
-                e2 = d2.__next__()
-                while True:
-                    if e1 < e2:
-                        e1 = d1.__next__()
-                    elif e1 > e2:
-                        e2 = d2.__next__()
-                    else:
-                        res.append(e1)
-                        e1 = d1.__next__()
-                        e2 = d2.__next__()
-            except StopIteration:
-                return SearchResult(res, False)
+            return SearchResult(self.merge_and_docs(res1.docs, res2.docs), False)
 
-    def subtract_from_uni(self, document_count, d):
-        res = []
-        start = 1
-        for n in d:
-            res += range(start,n)
-            start = n+1
-        res += range(start, document_count)
-        return res
+    def merge_and_docs(self, docs1, docs2):
+        iter1 = iter(docs1)
+        iter2 = iter(docs2)
+        e1 = next(iter1)
+        e2 = next(iter2)
+        try:
+            while True:
+                if e1 < e2:
+                    e1 = next(iter1)
+                elif e1 > e2:
+                    e2 = next(iter2)
+                else:
+                    yield e1
+                    e1 = next(iter1)
+                    e2 = next(iter2)
+        except StopIteration:
+            # one iter is empty, so there are no common elements
+            pass
+
+    def subtract_from_uni(self, N, d):
+        e2 = next(d)
+        for n in range(1, N + 1):
+            if i >= len(d) or n < d[i]:
+                    yield n
+            elif n == d[i]:
+                i += 1
+            else:
+                while d[i] < n:
+                    i += 1
 
     def subtract(self, d1, d2):
         """subtracts two lists in O(m + n) time."""
         # x \ y
-        res = []
-        d1 = iter(d1)
-        d2 = iter(d2)
-        try:
-            e1 = d1.__next__()
-            e2 = d2.__next__()
-            while True:
-                if e1 < e2:
-                    res.append(e1)
-                    e1 = d1.__next__()
-                elif e1 > e2:
-                    e2 = d2.__next__()
-                else:
-                    e2 = d2.__next__()
-                    e1 = d1.__next__()
-        except StopIteration:
-            return res
+        yield 0
 
 class QueryTest(unittest.TestCase):
     def test_phrase(self):
