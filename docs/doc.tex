@@ -58,32 +58,68 @@ Do podfolderu \texttt{data/} wgrywamy pliki źródłowe morfologika i wikipedii.
 Proces tworzenia wykorzystuje ideę MapReduce.
 \subsubsection{Faza map}
 Na początku przechodzimy przez plik wikipedii po linii i wyrażeniem regularnym wyznaczamy słowa. 
-Dla każdej znormalizowanej formy słowa. tworzymy parę $(słowo,\;nr_dokumentu,\;pozycja)$ i
+Dla każdej znormalizowanej formy słowa. tworzymy parę $(slowo,\;nr\_dokumentu,\;pozycja)$ i
 dodajemy ją do pliku tymczasowego \texttt{WORDS} jako jedną linię.
 \subsubsection{Faza reduce}
 Po przejściu przez cały plik wikipedii sortujemy plik \texttt{WORDS}, stabilnie, po pierwszym słowie,
 tym sposobem mamy zachowaną kolejność wystąpień dokumentów i pozycji w ramach artykułu.
 Przechodzimy teraz przez posortowany plik \texttt{WORDS.sorted}, i dla każdego trójliterowego prefiksu (lub krótszego,
-jeżeli całe słowo jest krótsze niż 3 litery) tworzymy tablice hashującą z listą postingową (odpowiednio skompresowaną lub nie).
-Zapisujemy tą tablice do pliku z użyciem biblioteki do serializacji.
+jeżeli całe słowo jest krótsze niż 3 litery) tworzymy tablice hashującą z listami postingowym (odpowiednio skompresowanymi lub nie).
+Zapisujemy tą tablice do pliku z użyciem biblioteki do serializacji \texttt{marshal}.
 W ten sam sposób najpierw serializujemy morfologika, aby potem móc szybko normalizować słowa.
 \subsection{Wyszukiwanie}
 Sposób wyszukiwania interaktywnego, to szczególny przypadek wyszukiwania w formie wsadowej.
-Wyszukiwarka w formie wsadowej, po wczytaniu wszystkich zapytań, gromadzi z nich słowa, grupując po prefiksie (hash z prefixami jako klucze i pythonowymi setami słów).
+Wyszukiwarka w formie wsadowej, po wczytaniu wszystkich zapytań, gromadzi z nich słowa, grupując po prefiksie (hash z prefixami jako klucze i pythonowymi setami słów). Dla każdego prefiksu w hashu otwieramy plik odpowiadający za słowa z tym prefiksem i wczytujemy do kolejnego hasha listy postingowe, które przydadzą sie później. Tak samo obsługiwane jest pobieranie informacji z morfologika. 
+
+Po wczytaniu wszystkich potrzebnych postingów, parsujemy zapytania i robimy odpowiednie scalania list postingowych, zgodnie z rozwiązaniami przedstawionymi na ćwiczeniach. Po utworzeniu postingów dla wszystkich zapytań, wczytujemy plik z tytułami i wypisujemy tytuły dla zapytań. 
 \subsection{Normalizacja}
-Dla słowa $w$, odczytujemy plik zależny od trójliterowego prefiksu $w$ i sprawdzamy, czy słowo jest w tym słowniku,
+Dla słowa $w$, odczytujemy plik z informacjami z morfologika dla $w$. Sprawdzamy czy słowo jest w tym słowniku,
 jeśli tak zwracamy wszystkie jego formy bazowe, odpowiednio po operacji stemmingu lub nie.
-\subsection{Spamiętywanie}
 \subsection{Struktury danych}
 \begin{enumerate}
 \item dict() - pythonowa wbudowana tablica hashująca
 \item set() - pythonowa wbudowana implementacja zbioru, też bazowana na tablicy hashującej
+\item list() - pythonowa wbudowana implementacja listy
 \end{enumerate}
 \section{Opis użytych bibliotek}
 \subsection{marshal}
+Jest to biblioteka do serializacji obiektów pythonowych, według testów najszybsza z dostępnych.
+
+Zapisujemy obiekt poleceniem:
+\begin{verbatim}
+marshal.dump(obiekt, uchwyt_do_pliku)
+\end{verbatim}
+Odczytujemy:
+\begin{verbatim}
+obiekt = marshal.load(uchwyt_do_pliku)
+\end{verbatim}
+
+Używamy jej do serializacji słowników przechowywujących postingi i dane z morfologika oraz listy tytułów.
 \subsection{gzip}
-\subsection{pstats}
+Jest to biblioteka do zapisywania i odczytywania plików skompresowanych programem \texttt{gzip}.
+
+Używamy specjalnej funkcji do otwarcia pliku, która zwraca nam uchwyt, do którego piszemy lub z niego czytamy:
+\begin{verbatim}
+handle = gzip.open(filename, 'wb') 
+handle.write("text")
+\end{verbatim}
+\subsection{cProfile i pstats}
+Są to biblioteki do profilowania programów w pythonie.
+
+Uruchamiamy plik, który chcemy zprofilować tak:
+\begin{verbatim}
+python3.1 -m cProfile -o profile ./boolsearch.py
+\end{verbatim}
+To trwa długo, więc można przerwać w każdej chwili i operować na danych częściowych. Dane są zapisane do pliku profile. Aby odczytać te dane korzystamy z programu w pythonie:
+\begin{verbatim}
+#!/usr/bin/env python3.1
+import pstats
+p = pstats.Stats('profile')
+p.sort_stats('time').print_stats() #zamiast time może być 'cumulative'
+\end{verbatim}
+który wyświetla nam czasy trwania funkcji.
 \subsection{unittest}
+PONTON UZUPEŁNIJ
 \section{Opis testów}
 \end{document}
 

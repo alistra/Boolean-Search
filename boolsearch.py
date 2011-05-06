@@ -54,7 +54,7 @@ def search(s, i, num):
 
     return not eof
 
-i = indexer.Indexer(compressed = True)
+i = indexer.Indexer()
 s = searcher.Searcher(i)
 
 if len(sys.argv) > 1 and sys.argv[1] == 'i':

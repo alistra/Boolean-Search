@@ -5,7 +5,6 @@ import re
 import marshal
 import sys
 import gzip
-import time
 
 def immediate_print(string):
     """A function to print and flush the stdout immediately"""
@@ -27,6 +26,8 @@ class Indexer:
         self.compressed = compressed
         self.index_dir = index_dir
         self.debug = debug
+        if self.stemmed:
+            self.stemsufix = re.compile(r'(.*)((logia|janin|owanie)|(czyk|rzeć|arty|enie|ślać|acja|ować)|(ość|cie|ski|cie|ium|owy|jać|ent|nie|lać|ieć|nąć|izm|iel|yzm|acz)|(ny|ić|ać|na|eć|ki|yć|ek|yk|ik|ów)|(a|y|e|o))$')
 
     def create_index(self, data_file, morfologik_file):
         """Create new index."""
@@ -130,7 +131,7 @@ class Indexer:
 
         for i, line in enumerate(indexfile_handle):
             if self.debug and i % 1000000 == 0:
-                immediate_print( "%(count)d parsed lines" % {'count': i})
+                immediate_print("%(count)d parsed lines" % {'count': i})
             words = line.rstrip().split(' ')
             key = words[0]
             if not morfologik:
@@ -150,7 +151,9 @@ class Indexer:
             else:
                 if prefix != "":
                     self.dump(index_dict, os.path.join(out_directory, prefix))
-                index_dict.clear()
+                    if self.debug:
+                        immediate_print("dumping dict %(filename)s" % {'filename': os.path.join(out_directory, prefix)})
+                    index_dict.clear()
                 if morfologik:
                     index_dict[key] = value
                 else:
@@ -228,29 +231,16 @@ class Indexer:
         lemmated = self.lemmatize(word.lower())
 
         if self.stemmed:
-            return (Indexer.stem(word) for word in lemmated)
+            return (self.stem(word) for word in lemmated)
         else:
             return lemmated
     
-    @staticmethod
-    def stem(word):
+    def stem(self, word):
         """Stems the word"""
         if len(word) <= 3:
             return word
 
-        m = re.match(r'(.*)(logia|janin|owanie)$', word)
-        if m:
-            return m.group(1)
-        m = re.match(r'(.*)(czyk|rzeć|arty|enie|ślać|acja|ować)$', word)
-        if m:
-            return m.group(1)
-        m = re.match(r'(.*)(ość|cie|ski|cie|ium|owy|jać|ent|nie|lać|ieć|nąć|izm|iel|yzm|acz)$', word)
-        if m:
-            return m.group(1)
-        m = re.match(r'(.*)(ny|ić|ać|na|eć|ki|yć|ek|yk|ik|ów)$', word)
-        if m:
-            return m.group(1)
-        m = re.match(r'(.*)(a|y|e|o)$', word)
+        m = self.stemsufix.match(word)
         if m:
             return m.group(1)
         else:
@@ -274,11 +264,8 @@ class Indexer:
 
 def main():
     """Does some indexer testing"""
-    #indexer = Indexer()
-    indexer = Indexer(compressed = False, debug = True)
+    indexer = Indexer(compressed = False, stemmed = True, debug = True)
 
     indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
-
-    indexer.load_index()
 if __name__ == "__main__":
     main()
