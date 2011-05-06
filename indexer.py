@@ -141,7 +141,7 @@ class Indexer:
             words = line.rstrip().split(' ')
             key = words[0]
             if not morfologik:
-                value = (int(words[1]), int(words[2))
+                value = (int(words[1]), int(words[2]))
             else:
                 value = words[1:]
             
@@ -287,7 +287,6 @@ class Indexer:
 
 def main():
     """Does some indexer testing"""
-    #indexer = Indexer()
     indexer = Indexer(compressed = False, debug = True)
 
     indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
