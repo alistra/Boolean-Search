@@ -73,7 +73,8 @@ class Searcher:
         return docs
 
     def search_cnf(self, query):
-        clause_results = [self.search_clause(clause)
+        to_list = lambda res: SearchResult(list(res.docs), res.negation)
+        clause_results = [to_list(self.search_clause(clause))
                 for clause in query.clauses]
 
         # sort by result length
