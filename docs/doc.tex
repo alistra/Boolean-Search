@@ -119,7 +119,39 @@ p.sort_stats('time').print_stats() #zamiast time może być 'cumulative'
 \end{verbatim}
 który wyświetla nam czasy trwania funkcji.
 \subsection{unittest}
-PONTON UZUPEŁNIJ
-\section{Opis testów}
-\end{document}
+Jest to biblioteka do testów jednostkowych.
 
+Zestaw testów uruchamia się tak:
+\begin{verbatim}
+unittest.main()
+\end{verbatim}
+
+Przykładowy test wygląda tak:
+\begin{verbatim}
+def test_single(self):
+    res = self.searcher.search('foo')
+    self.assertEqual(res, self.docs['foo'])
+\end{verbatim}
+Przy nierówności \texttt{res} i \texttt{self.docs['foo']} wyświetla błąd podczas uruchomienia zestawu testów.
+
+\section{Opis testów}
+Korzystaliśmy z wyżej opisanej biblioteki \texttt{unittest}, do testów jednostkowych. 
+
+Testy podane na KNO uzyskują poszczególne czasy na komputerach:
+\begin{enumerate}
+\item AMD Athlon 64 X2 4200+, 2GB RAM
+\begin{verbatim}
+\end{verbatim}
+\item Intel Core 2 Duo T9600 @ 2.80GHz, 4GB RAM
+\begin{verbatim}
+\end{verbatim}
+\item Komputer Pontona
+\begin{verbatim}
+\end{verbatim}
+\end{enumerate}
+
+Sprawdziliśmy też według zaleceń, czy wszystkie zapytania mają niepustą odpowiedź, w pytaniach dla \texttt{and} i \texttt{or}:
+\begin{verbatim}
+\end{verbatim}
+
+\end{document}
