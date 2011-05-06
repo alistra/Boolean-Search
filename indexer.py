@@ -101,6 +101,7 @@ class Indexer:
         word_regexp = re.compile(r'\w+')
         file_handle = open(filename, 'r')
         indexfile_handle = open(out_filename, 'w') 
+        word_per_doc_count = 0
     
         illegal_char_regexp = re.compile(r'[^1234567890qwertyuiopasdfghjklzxcvbnmęóąśłżźćń]')
 
@@ -110,13 +111,16 @@ class Indexer:
                     immediate_print('%(count)d documents indexed' % {'count': self.document_count})
                 self.document_count += 1
                 self.titles.append(line[10:].strip())
+                word_per_doc_count = 0
             else:
                 for word in word_regexp.findall(line):
+                    word_per_doc_count += 1
                     bases = self.normalize(word)
                     for base in bases:
                         if illegal_char_regexp.search(base):
                             continue
-                        indexfile_handle.write("%(base)s %(count)d\n" % {'base': base, 'count': self.document_count})
+                        indexfile_handle.write("%(base)s %(count)d %(pos)d\n" % {'base': base, 'count': self.document_count, 'pos': word_per_doc_count})
+
     @staticmethod
     def sort_file(filename, dest):
         """Sorts the big index file"""
@@ -137,7 +141,7 @@ class Indexer:
             words = line.rstrip().split(' ')
             key = words[0]
             if not morfologik:
-                value = int(words[1])
+                value = (int(words[1]), int(words[2))
             else:
                 value = words[1:]
             
