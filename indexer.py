@@ -167,6 +167,14 @@ class Indexer:
         self.dump(index_dict, os.path.join(out_directory, prefix))
     
     @staticmethod
+    def differentiate_dict(dic):
+        '''Differentiate posting lists in a dict'''
+        for key in dic:
+            dic[key] = list(Indexer.differentiate_posting(dic[key]))
+        return dic
+
+
+    @staticmethod
     def differentiate_posting(posting):
         """Differentiaties posting lists"""
         if not posting == []:
@@ -192,6 +200,8 @@ class Indexer:
         """Dumps an object to a file"""
         if self.compressed:
             handle = gzip.open(filename, 'wb')
+            if type(obj) == dict:
+                obj = Indexer.differentiate_dict(obj)
         else:
             handle = open(filename, 'wb')
         marshal.dump(obj, handle, 2)
@@ -222,7 +232,11 @@ class Indexer:
             dic = self.load(filename)
             for word in words:
                 if word in dic:
-                    cache[word] = dic[word]
+                    if self.compressed:
+                        posting = Indexer.dedifferentiate_posting(dic[word])
+                    else:
+                        posting = dic[word]
+                    cache[word] = posting
 
     def lemmatize(self, word):
         """Lemmatize a word"""
