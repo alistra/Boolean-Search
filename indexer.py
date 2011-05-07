@@ -99,6 +99,7 @@ class Indexer:
         word_regexp = re.compile(r'\w+')
         file_handle = open(filename, 'r')
         indexfile_handle = open(out_filename, 'w') 
+        word_per_doc_count = 0
     
         illegal_char_regexp = re.compile(r'[^1234567890qwertyuiopasdfghjklzxcvbnmęóąśłżźćń]')
 
@@ -108,13 +109,16 @@ class Indexer:
                     immediate_print('%(count)d documents indexed' % {'count': self.document_count})
                 self.document_count += 1
                 self.titles.append(line[10:].strip())
+                word_per_doc_count = 0
             else:
                 for word in word_regexp.findall(line):
+                    word_per_doc_count += 1
                     bases = self.normalize(word)
                     for base in bases:
                         if illegal_char_regexp.search(base):
                             continue
-                        indexfile_handle.write("%(base)s %(count)d\n" % {'base': base, 'count': self.document_count})
+                        indexfile_handle.write("%(base)s %(count)d %(pos)d\n" % {'base': base, 'count': self.document_count, 'pos': word_per_doc_count})
+
     @staticmethod
     def sort_file(filename, dest):
         """Sorts the big index file"""
@@ -135,7 +139,7 @@ class Indexer:
             words = line.rstrip().split(' ')
             key = words[0]
             if not morfologik:
-                value = int(words[1])
+                value = (int(words[1]), int(words[2]))
             else:
                 value = words[1:]
             
@@ -258,14 +262,23 @@ class Indexer:
         """Gets a title from a marshalled file"""
         return self.titles[article_number - 1]
 
-    def get_posting(self, word):
+    def get_positional_posting(self, word):
         """Gets a posting from a marshalled file for a given word"""
         return self.index_cache.get(word, [])
 
+    def get_posting(self, word):
+        pp = self.get_positional_posting(word)
+        old = 0
+        for pos in pp:
+            if pos[0] != old:
+                yield(pos[0])
+                old = pos[0]
+
 def main():
     """Does some indexer testing"""
-    indexer = Indexer(compressed = False, stemmed = True, debug = True)
 
+    indexer = Indexer(compressed = False, debug = True)
     indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
+
 if __name__ == "__main__":
     main()
