@@ -1,2 +1,2 @@
 all:
-	texi2pdf doc.tex
+	rubber -d doc.tex
