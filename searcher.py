@@ -1,5 +1,5 @@
 #!/usr/bin/python3.1
-
+'''File for the Searcher class and tests for it'''
 import unittest
 
 class EmptyQuery(Exception):
@@ -7,6 +7,9 @@ class EmptyQuery(Exception):
 
 class Query:
     def __init__(self, query = ""):
+        self.terms = []
+        self.clauses = []
+        self.type = ""
         self.parse(query)
 
     def parse(self, query):
@@ -15,8 +18,6 @@ class Query:
                 self.parse_phrase(query)
             else:
                 self.parse_cnf(query)
-        else:
-            self.type = ""
 
     def parse_phrase(self, phrase):
         self.terms = phrase[1:-1].split(' ')
@@ -30,6 +31,7 @@ class Query:
                 if clause != '']
 
     def get_words(self):
+        '''Generator for the words in queries'''
         if self.type == 'cnf':
             for clause in self.clauses:
                 for term in clause:
@@ -105,7 +107,7 @@ class Searcher:
        
         res = postings[0]
         for pos in postings[1:]:
-                res = self.merge_or(res, pos)
+            res = self.merge_or(res, pos)
         res.negation = neg
         return res
 
@@ -128,47 +130,48 @@ class Searcher:
             return SearchResult(self.merge_or_docs(res2.docs, res1.docs), False)
 
     def merge_or_docs(self, docs1, docs2):
-            d1 = iter(docs1)
-            d2 = iter(docs2)
-            last_added = -1
-            e1 = None
-            e2 = None
-            try:
-                e1 = next(d1)
-                e2 = next(d2)
-                while True:
-                    if e1 < e2:
-                        yield(e1)
-                        last_added = e1
-                        e1 = next(d1)
-                    elif e1 > e2:
-                        yield(e2)
-                        last_added = e2
-                        e2 = next(d2)
-                    else:
-                        yield(e1)
-                        last_added = e1
-                        e1 = next(d1)
-                        e2 = next(d2)
-            except StopIteration:
-                if e1 and e2:
-                    t1 = min(e1,e2)
-                    t2 = max(e1,e2)
-                    if t1 > last_added:
-                        yield(t1)
-                        if t1 != t2:
-                            yield(t2)
-                    elif t2 > last_added:
-                        yield(t2)
-                elif e1 and e1 > last_added:
-                    yield(e1)
-                elif e2 and e2 > last_added:
-                    yield(e2)
+        '''Generator for or-merging lists'''
+        gen1 = iter(docs1)
+        gen2 = iter(docs2)
+        last_added = -1
+        elem1 = None
+        elem2 = None
+        try:
+            elem1 = next(gen1)
+            elem2 = next(gen2)
+            while True:
+                if elem1 < elem2:
+                    yield(elem1)
+                    last_added = elem1
+                    elem1 = next(gen1)
+                elif elem1 > elem2:
+                    yield(elem2)
+                    last_added = elem2
+                    elem2 = next(gen2)
+                else:
+                    yield(elem1)
+                    last_added = elem1
+                    elem1 = next(gen1)
+                    elem2 = next(gen2)
+        except StopIteration:
+            if elem1 and elem2:
+                tmin = min(elem1, elem2)
+                tmax = max(elem1, elem2)
+                if tmin > last_added:
+                    yield(tmin)
+                    if tmin != tmax:
+                        yield(tmax)
+                elif tmax > last_added:
+                    yield(tmax)
+            elif elem1 and elem1 > last_added:
+                yield(elem1)
+            elif elem2 and elem2 > last_added:
+                yield(elem2)
 
-            for i in d1:
-                yield(i)
-            for i in d2:
-                yield(i)
+        for elem1 in gen1:
+            yield(elem1)
+        for elem2 in gen2:
+            yield(elem2)
 
     def merge_and(self, res1, res2):
         """Merges with AND two search results in O(m + n) time."""
@@ -189,63 +192,69 @@ class Searcher:
             return SearchResult(self.merge_and_docs(res1.docs, res2.docs), False)
 
     def merge_and_docs(self, docs1, docs2):
-            d1 = iter(docs1)
-            d2 = iter(docs2)
-            try:
-                e1 = next(d1)
-                e2 = next(d2)
-                while True:
-                    if e1 < e2:
-                        e1 = next(d1)
-                    elif e1 > e2:
-                        e2 = next(d2)
-                    else:
-                        yield(e1)
-                        e1 = next(d1)
-                        e2 = next(d2)
-            except StopIteration:
-                pass
+        '''Generator for and-merging lists'''
+        gen1 = iter(docs1)
+        gen2 = iter(docs2)
+        try:
+            elem1 = next(gen1)
+            elem2 = next(gen2)
+            while True:
+                if elem1 < elem2:
+                    elem1 = next(gen1)
+                elif elem1 > elem2:
+                    elem2 = next(gen2)
+                else:
+                    yield(elem1)
+                    elem1 = next(gen1)
+                    elem2 = next(gen2)
+        except StopIteration:
+            pass
 
-    def subtract_from_uni(self, document_count, d):
+    def subtract_from_uni(self, document_count, docs):
+        '''Generator for subtracting a posting from the universe'''
         start = 1
-        for n in d:
-            for i in range(start,n):
+        for n in docs:
+            for i in range(start, n):
                 yield(i)
             start = n+1
-        for i in range(start, document_count):
+        for i in range(start, document_count+1):
             yield(i)
 
-    def subtract(self, d1, d2):
-        """subtracts two lists in O(m + n) time."""
-        # x \ y
-        d1 = iter(d1)
-        d2 = iter(d2)
-        try:
-            e2 = next(d2)
-            e1 = next(d1)
-            while True:
-                if e1 < e2:
-                    yield(e1)
-                    e1 = next(d1)
-                elif e1 > e2:
-                    e2 = next(d2)
-                else:
-                    e2 = next(d2)
-                    e1 = next(d1)
-        except StopIteration:
-            for e1 in d1:
-                yield e1
+#który jest dobrze?
+#    def subtract_from_uni(self, N, d):
+#        '''Generator for subtracting a posting from the universe'''
+#        e2 = next(d)
+#        for n in range(1, N + 1):
+#            if i >= len(d) or n < d[i]:
+#                yield n
+#            elif n == d[i]:
+#                i += 1
+#            else:
+#                while d[i] < n:
+#                    i += 1
 
-    def subtract_from_uni(self, N, d):
-        e2 = next(d)
-        for n in range(1, N + 1):
-            if i >= len(d) or n < d[i]:
-                    yield n
-            elif n == d[i]:
-                i += 1
-            else:
-                while d[i] < n:
-                    i += 1
+
+    def subtract(self, docs1, docs2):
+        """Generator for subtracting two lists in O(m + n) time."""
+        # x \ y
+        gen1 = iter(docs1)
+        gen2 = iter(docs2)
+        try:
+            elem2 = next(gen2)
+            elem1 = next(gen1)
+            while True:
+                if elem1 < elem2:
+                    yield(elem1)
+                    elem1 = next(gen1)
+                elif elem1 > elem2:
+                    elem2 = next(gen2)
+                else:
+                    elem2 = next(gen2)
+                    elem1 = next(gen1)
+        except StopIteration:
+            for elem1 in gen1:
+                yield elem1
+
 
 class QueryTest(unittest.TestCase):
     def test_phrase(self):
@@ -344,4 +353,4 @@ class SearcherTest(unittest.TestCase):
         self.assertEqual(res, [])
 
 if __name__ == "__main__":
-   unittest.main()
+    unittest.main()
