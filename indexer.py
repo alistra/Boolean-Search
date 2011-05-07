@@ -274,7 +274,7 @@ class Indexer:
         """Gets a title from a marshalled file"""
         return self.titles[article_number - 1]
 
-    def get_posting(self, word):
+    def get_positional_posting(self, word):
         """Gets a posting from a marshalled file for a given word"""
         forms = self.normalize(word)
         res = set()
@@ -285,11 +285,19 @@ class Indexer:
                 res.update(index[form])
         return sorted(res) #maybe try merge_or
 
+    def get_posting(self, word):
+        pp = self.get_positional_posting(word)
+        old = 0
+        for pos in pp:
+            if pos[0] != old:
+                yield(pos[0])
+                old = pos[0]
+
 def main():
     """Does some indexer testing"""
     indexer = Indexer(compressed = False, debug = True)
 
-    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
+    #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
 
     indexer.load_index()
 if __name__ == "__main__":
