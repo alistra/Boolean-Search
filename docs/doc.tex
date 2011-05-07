@@ -1,87 +1,73 @@
 \documentclass[11pt]{article}
+
 \usepackage[utf8]{inputenc}
-\usepackage[]{polski}
+\usepackage{polski}
+\usepackage{a4wide}
 
-\newcommand{\handout}[5]{
-  \noindent
-  \begin{center}
-  \framebox{
-    \vbox{
-      \hbox to 5.78in { {\bf Wyszukiwanie informacji} \hfill #2 }
-      \vspace{4mm}
-      \hbox to 5.78in { {\Large \hfill #5  \hfill} }
-      \vspace{2mm}
-      \hbox to 5.78in { {\em #3 \hfill #4} }
-    }
-  }
-  \end{center}
-  \vspace*{4mm}
-}
-
-\newcommand{\lecture}[4]{\handout{#1}{#2}{#3}{#4}{#1}}
-\newcommand{\high}{\mathrm{high}}
-\newcommand{\low}{\mathrm{low}}
-
-\newtheorem{theorem}{Twierdzenie}
-\newtheorem{corollary}[theorem]{Wniosek}
-\newtheorem{lemma}[theorem]{Lemat}
-\newtheorem{observation}[theorem]{Obserwacja}
-\newtheorem{definition}[theorem]{Definicja}
-\newtheorem{fact}[theorem]{Fakt}
-\newtheorem{assumption}[theorem]{Założenie}
-
-% 1-inch margins, from fullpage.sty by H.Partl, Version 2, Dec. 15, 1988.
-\topmargin 0pt
-\advance \topmargin by -\headheight
-\advance \topmargin by -\headsep
-\textheight 8.9in
-\oddsidemargin 0pt
-\evensidemargin \oddsidemargin
-\marginparwidth 0.5in
-\textwidth 6.5in
-
-\parindent 0in
-\parskip 1.5ex
-%\renewcommand{\baselinestretch}{1.25}
+\author{Aleksander Balicki, Tomasz Maciejewski}
+\title{Dokumentacja wyszukiwarki zapytań boolowskich}
 
 \begin{document}
 
-\lecture{Dokumentacja wyszukiwarki boolowskiej}{Lato 2011}{Tomasz Jurdzinski}{Aleksander Balicki, Tomasz Maciejewski}
+\maketitle
+
+\section{Wstęp}
+Dokument opisuje proces instalacji i uruchamiania wyszukiwarki zapytań boolowskich, oraz użyte biblioteki i struktury danych.
 
 \section{Instalacja}
-Pliki projektu wgrywamy do jednego folderu.\\
-Do podfolderu \texttt{data/} wgrywamy pliki źródłowe morfologika i wikipedii.
-\section{Użytkowanie}
-<DOROBIC FAJNE UI>
-\section{Opis użytych algorytmów i struktur danych}
-\subsection{Tworzenie indeksu}
-Proces tworzenia wykorzystuje ideę MapReduce.
-\subsubsection{Faza map}
-Na początku przechodzimy przez plik wikipedii po linii i wyrażeniem regularnym wyznaczamy słowa. 
-Dla każdej znormalizowanej formy słowa. tworzymy parę $(slowo,\;nr\_dokumentu,\;pozycja)$ i
-dodajemy ją do pliku tymczasowego \texttt{WORDS} jako jedną linię.
-\subsubsection{Faza reduce}
-Po przejściu przez cały plik wikipedii sortujemy plik \texttt{WORDS}, stabilnie, po pierwszym słowie,
-tym sposobem mamy zachowaną kolejność wystąpień dokumentów i pozycji w ramach artykułu.
-Przechodzimy teraz przez posortowany plik \texttt{WORDS.sorted}, i dla każdego trójliterowego prefiksu (lub krótszego,
-jeżeli całe słowo jest krótsze niż 3 litery) tworzymy tablice hashującą z listami postingowym (odpowiednio skompresowanymi lub nie).
-Zapisujemy tą tablice do pliku z użyciem biblioteki do serializacji \texttt{marshal}.
-W ten sam sposób najpierw serializujemy morfologika, aby potem móc szybko normalizować słowa.
-\subsection{Wyszukiwanie}
-Sposób wyszukiwania interaktywnego, to szczególny przypadek wyszukiwania w formie wsadowej.
-Wyszukiwarka w formie wsadowej, po wczytaniu wszystkich zapytań, gromadzi z nich słowa, grupując po prefiksie (hash z prefixami jako klucze i pythonowymi setami słów). Dla każdego prefiksu w hashu otwieramy plik odpowiadający za słowa z tym prefiksem i wczytujemy do kolejnego hasha listy postingowe, które przydadzą sie później. Tak samo obsługiwane jest pobieranie informacji z morfologika. 
+Pliki projektu wgrywamy do jednego folderu. Do podfolderu \texttt{data} wgrywamy pliki:
+\begin{enumerate}
+\item \texttt{morfologik\_do\_wyszukiwarek.txt} -- dane do morfologika,
+\item \texttt{wikipedia\_dla\_wyszukiwarek.txt} -- plik z danymi źródłowymi
+\end{enumerate}
 
-Po wczytaniu wszystkich potrzebnych postingów, parsujemy zapytania i robimy odpowiednie scalania list postingowych, zgodnie z rozwiązaniami przedstawionymi na ćwiczeniach. Po utworzeniu postingów dla wszystkich zapytań, wczytujemy plik z tytułami i wypisujemy tytuły dla zapytań. 
-\subsection{Normalizacja}
-Dla słowa $w$, odczytujemy plik z informacjami z morfologika dla $w$. Sprawdzamy czy słowo jest w tym słowniku,
-jeśli tak zwracamy wszystkie jego formy bazowe, odpowiednio po operacji stemmingu lub nie.
+\section{Użytkowanie}
+Interfejs wyszukiwarki uruchamia się poleceniem \texttt{boolsearch.py}. Domyślnym trybem jest tryb wsadowy, który będzie czytał zapytania ze standardowego wejścia aż do napotkania znaku końca pliku.
+
+Tryb interaktywny wywołuje się poleceniem \texttt{boolsearch.py i}. W trybie interaktywnym wczytywane są zapytania również ze standardowego wejścia, ale wyniki wypisywane są od razu po wczytaniu zapytania.
+
+\section{Opis użytych algorytmów i struktur danych}
+
+\subsection{Tworzenie indeksu}
+Na początku wczytujemy dane do morfologika, tworząc z nich słownik. Następnie proces tworzenia indeksu przebiega w kilku fazach. Indeks jest tworzony w podkatalogu \texttt{index}.
+
+\textbf{Co z kompresją?}
+
+\subsubsection{Faza zbierania informacji}
+Przechodzimy przez plik z danymi wiersz po wierszu, zapamiętując numer dokumentu, którego wiersze analizujemy. Numery i tytuły dokumentów zapisywane są do pliku \texttt{TITLES}. Wiersz rozbijamy na słowa, pamiętając pozycję słowa w dokumencie, a ze słów -- przy pomocy morfologika -- tworzymy jego znormalizowane formy. Dla każdej znormalizowanej formy słowa zapisujemy do pliku \texttt{WORDS} wiersz: słowo, numer dokumentu, pozycja słowa w dokumencie.
+
+\subsubsection{Faza sortowania}
+Po przejściu przez cały plik z danymi sortujemy stabilnie plik \texttt{WORDS} po pierwszym elemencie, czyli po znormalizowanej formie słowa. Stabilność zagwarantuje nam dobrą kolejność numerów dokumentów i pozycji w dokumencie. Wynik sortowania zapisujemy w pliku \texttt{WORDS.sorted}.
+
+Do sortowania używany jest UNIX-owy program \texttt{sort}, uruchamiany w następujący sposób:
+\begin{verbatim}
+LC_ALL=C sort -T. -k1,1 -s WORDS > WORDS.sorted
+\end{verbatim}
+
+\subsubsection{Faza tworzenia indeksu}
+Następnie przechodzimy przez posortowany plik \texttt{WORDS.sorted} i parsując każdy wiersz, dodajemy go do odpowiedniego słownika. Parsowanie polega po prostu na odczytaniu trzech pól wiersza: słowa, dokumentu i pozycji.
+
+Słownik jest indeksem wszystkich słów, których pierwsze trzy litery są takie same. Słowniki te kolejno zapisujemy na dysk przy pomocy biblioteki \texttt{marshal} służącej do serializacji obiektów Pythona. Dzięki sortowaniu każdy słownik będziemy otwierali do zapisu tylko raz, aż się się skończy jego prefiks. 
+
+\subsubsection{Faza tworzenia indeksu morfologika}
+W ten sam sposób sortujemy plik z danymi morfologika i indeksujemy do trzyliterowych słowników, aby potem móc szybko normalizować słowa.
+
+\subsection{Wyszukiwanie}
+Wyszukiwarka w formie wsadowej po wczytaniu wszystkich zapytań gromadzi z nich słowa, grupując po 3-literowym prefiksie. Dla każdego prefiksu jest otwierany plik odpowiadający za słowa z tym prefiksem. Z tego pliku dodawane są szukane słowa do słownika w pamięci. Tak samo obsługiwane jest pobieranie informacji z morfologika.
+
+Po wczytaniu wszystkich potrzebnych postingów i danych z morfologika, zapytania zostają sparsowane i przeprowadzane są odpowiednie scalania list postingowych zgodnie z rozwiązaniami przedstawionymi na ćwiczeniach. Negacja jest przenoszona w górę drzewa zapytania. Jeśli wynik końcowy dla zapytania wyszedł z negacją, to odejmowany jest wynik od listy wszystkich dokumentów.
+
+Po otrzymaniu wyników dla wszystkich zapytań jest wczytywany plik z tytułami i wypisywane są tytuły dla dokumentów wynikowych.
+
 \subsection{Struktury danych}
 \begin{enumerate}
 \item dict() - pythonowa wbudowana tablica hashująca
-\item set() - pythonowa wbudowana implementacja zbioru, też bazowana na tablicy hashującej
+\item set() - pythonowa wbudowana implementacja zbioru, też bazująca na tablicy hashującej
 \item list() - pythonowa wbudowana implementacja listy
 \end{enumerate}
+
 \section{Opis użytych bibliotek}
+
 \subsection{marshal}
 Jest to biblioteka do serializacji obiektów pythonowych, według testów najszybsza z dostępnych.
 
@@ -94,72 +80,29 @@ Odczytujemy:
 obiekt = marshal.load(uchwyt_do_pliku)
 \end{verbatim}
 
-Używamy jej do serializacji słowników przechowywujących postingi i dane z morfologika oraz listy tytułów.
+Używana jest do serializacji słowników przechowujących postingi i dane z morfologika oraz listy tytułów.
+
 \subsection{gzip}
 Jest to biblioteka do zapisywania i odczytywania plików skompresowanych programem \texttt{gzip}.
 
-Używamy specjalnej funkcji do otwarcia pliku, która zwraca nam uchwyt, do którego piszemy lub z niego czytamy:
+Używana jest specjalna funkcja do otwarcia pliku, która zwraca nam uchwyt, którego można używać do pisania lub czytania:
 \begin{verbatim}
 handle = gzip.open(filename, 'wb') 
 handle.write("text")
 \end{verbatim}
-\subsection{cProfile i pstats}
-Są to biblioteki do profilowania programów w pythonie.
-
-Uruchamiamy plik, który chcemy zprofilować tak:
-\begin{verbatim}
-python3.1 -m cProfile -o profile ./boolsearch.py
-\end{verbatim}
-To trwa długo, więc można przerwać w każdej chwili i operować na danych częściowych. Dane są zapisane do pliku profile. Aby odczytać te dane korzystamy z programu w pythonie:
-\begin{verbatim}
-#!/usr/bin/env python3.1
-import pstats
-p = pstats.Stats('profile')
-p.sort_stats('time').print_stats() #zamiast time może być 'cumulative'
-\end{verbatim}
-który wyświetla nam czasy trwania funkcji.
-\subsection{unittest}
-Jest to biblioteka do testów jednostkowych.
-
-Zestaw testów uruchamia się tak:
-\begin{verbatim}
-unittest.main()
-\end{verbatim}
-
-Przykładowy test wygląda tak:
-\begin{verbatim}
-def test_single(self):
-    res = self.searcher.search('foo')
-    self.assertEqual(res, self.docs['foo'])
-\end{verbatim}
-Przy nierówności \texttt{res} i \texttt{self.docs['foo']} wyświetla błąd podczas uruchomienia zestawu testów.
 
 \section{Opis testów}
-Korzystaliśmy z wyżej opisanej biblioteki \texttt{unittest}, do testów jednostkowych. 
+Czasy testów podanych na KNO i czas indeksowania, wraz z informacją o użytych komputerach, podane są w tabelce:
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+Nazwa & AMD Athlon 64 X2 4200+ & Intel C2D 2.4GHz & Intel C2D 2.8GHz \\ \hline
+indeksowanie & ? & ? & ? \\ \hline
+pytania\_and\_dla\_IR.txt & 6m30s & 4m25s & 2m21s \\ \hline
+pytania\_or\_dla\_IR.txt & 10m33s & 7m01s & 3m36s \\ \hline
+\end{tabular}
+\end{center}
 
-Testy podane na KNO uzyskują poszczególne czasy na komputerach:
-\begin{enumerate}
-\item AMD Athlon 64 X2 4200+, 2GB RAM
-\begin{verbatim}
-alistra@bialobrewy Boolean-Search % time ./boolsearch.py < data/pytania_and_dla_IR.txt > /dev/null
-./boolsearch.py < data/pytania_and_dla_IR.txt > /dev/null  387.33s user 1.61s system 99% cpu 6:30.49 total
-alistra@bialobrewy Boolean-Search % time ./boolsearch.py < data/pytania_or_dla_IR.txt > /dev/null
-./boolsearch.py < data/pytania_or_dla_IR.txt > /dev/null  622.52s user 3.66s system 98% cpu 10:33.42 total
-\end{verbatim}
-\item Intel Core 2 Duo T9600 @ 2.80GHz, 4GB RAM
-\begin{verbatim}
-alistra@adeli Boolean-Search % time ./boolsearch.py < data/pytania_and_dla_IR.txt > /dev/null
-./boolsearch.py < data/pytania_and_dla_IR.txt > /dev/null  136.97s user 1.32s system 97% cpu 2:21.35 total
-alistra@adeli Boolean-Search % time ./boolsearch.py < data/pytania_or_dla_IR.txt > /dev/null
-./boolsearch.py < data/pytania_or_dla_IR.txt > /dev/null  208.09s user 2.09s system 97% cpu 3:36.62 total
-\end{verbatim}
-\item Komputer Pontona
-\begin{verbatim}
-\end{verbatim}
-\end{enumerate}
-
-Sprawdziliśmy też według zaleceń, czy wszystkie zapytania mają niepustą odpowiedź, w pytaniach dla \texttt{and} i \texttt{or}:
-\begin{verbatim}
-\end{verbatim}
+Sprawdziliśmy też według zaleceń, czy wszystkie zapytania mają niepustą odpowiedź, w pytaniach dla \texttt{and} i \texttt{or}.
 
 \end{document}
