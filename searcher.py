@@ -314,43 +314,55 @@ class SearcherTest(unittest.TestCase):
             def get_posting(self2, term):
                 return self.docs[term]
 
+            def normalize(self, term):
+                return [term]
+
         self.searcher = Searcher(IndexerMock())
 
     def test_single(self):
-        res = self.searcher.search('foo')
-        self.assertEqual(res, self.docs['foo'])
+        query = Query('foo')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), self.docs['foo'])
 
     def test_single_negation(self):
-        res = self.searcher.search('~foo')
-        self.assertEqual(res, [6, 7, 8, 9, 10])
+        query = Query('~foo')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), [6, 7, 8, 9, 10])
 
     def test_plain_and(self):
-        res = self.searcher.search('foo bar baz')
-        self.assertEqual(res, [2])
+        query = Query('foo bar baz')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), [2])
 
     def test_plain_and_negation(self):
-        res = self.searcher.search('foo ~bar baz')
-        self.assertEqual(res, [1])
+        query = Query('foo ~bar baz')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), [1])
 
     def test_plain_and_negation2(self):
-        res = self.searcher.search('~foo ~bar')
-        self.assertEqual(res, [6, 10])
+        query = Query('~foo ~bar')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), [6, 10])
 
     def test_plain_or(self):
-        res = self.searcher.search('foo|alone')
-        self.assertEqual(res, [1, 2, 3, 4, 5, 6, 10])
+        query = Query('foo|alone')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), [1, 2, 3, 4, 5, 6, 10])
 
     def test_plain_of_negation(self):
-        res = self.searcher.search('~foo|bar')
-        self.assertEqual(res, [2, 3, 6, 7, 8, 9, 10])
+        query = Query('~foo|bar')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), [2, 3, 6, 7, 8, 9, 10])
 
     def test_plain_of_negation2(self):
-        res = self.searcher.search('~foo|~alone')
-        self.assertEqual(res, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        query = Query('~foo|~alone')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
     def test_empty_intersection(self):
-        res = self.searcher.search('bar|~baz foo|baz alone')
-        self.assertEqual(res, [])
+        query = Query('bar|~baz foo|baz alone')
+        res = self.searcher.search(query)
+        self.assertEqual(list(res), [])
 
 if __name__ == "__main__":
     unittest.main()
