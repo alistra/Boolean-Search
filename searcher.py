@@ -70,9 +70,40 @@ class Searcher:
             else:
                 docs = results.docs
         else:
-            docs = []
+            docs = self.search_phrase(query)
 
         return docs
+
+    def search_phrase(self, query):
+        posting = [self.indexer.get_positional_posting(term)
+                for term in query.terms]
+        res = posting[0]
+        for p in posting[1:]:
+            res = self.merge_phrase(res, p)
+        for doc, pos in res:
+            yield doc
+
+    def merge_phrase(self, docs1, docs2):
+        try:
+            iter1 = iter(docs1)
+            iter2 = iter(docs2)
+            d1, k1 = next(iter1)
+            d2, k2 = next(iter2)
+            while True:
+                if d1 < d2:
+                    d1, k1 = next(iter1)
+                elif d2 < d1:
+                    d2, k2 = next(iter2)
+                elif k1 + 1 < k2:
+                    d1, k1 = next(iter1)
+                elif k1 + 1 > k2:
+                    d2, k2 = next(iter2)
+                else:
+                    yield d1
+                    d1, k1 = next(iter1)
+                    d2, k2 = next(iter2)
+        except StopIteration:
+            pass
 
     def search_cnf(self, query):
         to_list = lambda res: SearchResult(list(res.docs), res.negation)
