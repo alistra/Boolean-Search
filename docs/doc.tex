@@ -141,6 +141,10 @@ Testy podane na KNO uzyskują poszczególne czasy na komputerach:
 \begin{enumerate}
 \item AMD Athlon 64 X2 4200+, 2GB RAM
 \begin{verbatim}
+alistra@bialobrewy Boolean-Search % time ./boolsearch.py < data/pytania_and_dla_IR.txt > /dev/null
+./boolsearch.py < data/pytania_and_dla_IR.txt > /dev/null  387.33s user 1.61s system 99% cpu 6:30.49 total
+alistra@bialobrewy Boolean-Search % time ./boolsearch.py < data/pytania_or_dla_IR.txt > /dev/null
+./boolsearch.py < data/pytania_or_dla_IR.txt > /dev/null  622.52s user 3.66s system 98% cpu 10:33.42 total
 \end{verbatim}
 \item Intel Core 2 Duo T9600 @ 2.80GHz, 4GB RAM
 \begin{verbatim}
