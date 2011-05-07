@@ -9,6 +9,7 @@ except:
     pass
 
 def search(s, i, num):
+    '''Perform a search on a batch of queries'''
     queries = []
     results = []
     query_words = {}

@@ -205,21 +205,24 @@ class Indexer:
         return marshal.load(handle)
 
     def load_to_morfologik_cache(self, words, prefix):
+        '''Load the info about words from a morfologik file to a morfologik cache'''
         if words != []:
             filename = os.path.join(self.index_dir, 'morfologik', prefix)
             self.load_to_cache(self.morfologik_cache, words, filename)
 
     def load_to_index_cache(self, words, prefix):
+        '''Load the info about words from an index file to the index cache'''
         if words != []:
             filename = os.path.join(self.index_dir, prefix)
             self.load_to_cache(self.index_cache, words, filename)
 
     def load_to_cache(self, cache, words, filename):
+        '''Load the info about words from a file to a cache'''
         if os.path.exists(filename):
-            d = self.load(filename)
+            dic = self.load(filename)
             for word in words:
-                if word in d:
-                    cache[word] = d[word]
+                if word in dic:
+                    cache[word] = dic[word]
 
     def lemmatize(self, word):
         """Lemmatize a word"""
@@ -244,9 +247,9 @@ class Indexer:
         if len(word) <= 3:
             return word
 
-        m = self.stemsufix.match(word)
-        if m:
-            return m.group(1)
+        mat = self.stemsufix.match(word)
+        if mat:
+            return mat.group(1)
         else:
             return word
     
@@ -263,13 +266,14 @@ class Indexer:
         return self.titles[article_number - 1]
 
     def get_positional_posting(self, word):
-        """Gets a posting from a marshalled file for a given word"""
+        """Gets a positional posting for a given word"""
         return self.index_cache.get(word, [])
 
     def get_posting(self, word):
-        pp = self.get_positional_posting(word)
+        """Gets a document posting for a given word"""
+        posposting = self.get_positional_posting(word)
         old = 0
-        for pos in pp:
+        for pos in posposting:
             if pos[0] != old:
                 yield(pos[0])
                 old = pos[0]
