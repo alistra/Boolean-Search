@@ -1,6 +1,8 @@
 #!/usr/bin/python3.1
 '''File for the Searcher class and tests for it'''
 import unittest
+import itertools
+import re
 
 class EmptyQuery(Exception):
     pass
@@ -12,23 +14,26 @@ class Query:
         self.type = ""
         self.parse(query)
 
-    def parse(self, query):
-        if query != "":
-            if query[0] == '"' and query[-1] == '"':
-                self.parse_phrase(query)
+    def parse(self, query_str):
+        if query_str != "":
+            if query_str[0] == '"' and query_str[-1] == '"':
+                self.parse_phrase(query_str)
             else:
-                self.parse_cnf(query)
+                self.parse_cnf(query_str)
 
-    def parse_phrase(self, phrase):
-        self.terms = phrase[1:-1].split(' ')
+    def parse_phrase(self, query_str):
+        self.terms = query_str[1:-1].split(' ')
         self.type = "phrase"
         if self.terms == ['']:
             raise EmptyQuery()
 
-    def parse_cnf(self, cnf):
+    def parse_cnf(self, query_str):
         self.type = "cnf"
-        self.clauses = [clause.split('|') for clause in cnf.split(' ') 
-                if clause != '']
+        illegal_char_regexp = re.compile(r'[^1234567890qwertyuiopasdfghjklzxcvbnmęóąśłżźćń~]')
+
+        self.clauses = [clause.split('|') for clause in query_str.split(' ') if clause != '']
+        for clause in self.clauses:
+            filter(lambda word: not illegal_char_regexp.search(word), clause)
 
     def get_words(self):
         '''Generator for the words in queries'''
@@ -300,19 +305,19 @@ class QueryTest(unittest.TestCase):
 
     def test_cnf(self):
         q = Query("foo bar|baz ~not term1|~term2")
-        self.assertEqual(q.clauses, [['foo'], ['bar', 'baz'], ['~not'], ['term1', '~term2']])
+        self.assertEqual(list(q.clauses), [['foo'], ['bar', 'baz'], ['~not'], ['term1', '~term2']])
         self.assertEqual(q.type, 'cnf')
     
     def test_single_word_cnf(self):
         q = Query("single")
-        self.assertEqual(q.clauses, [['single']])
+        self.assertEqual(list(q.clauses), [['single']])
         self.assertEqual(q.type, 'cnf')
 
     def test_parse_after_phrase(self):
         q = Query('"aaa bbb ccc"')
         q.parse('foo bar|baz')
         self.assertEqual(q.type, 'cnf')
-        self.assertEqual(q.clauses, [['foo'], ['bar', 'baz']])
+        self.assertEqual(list(q.clauses), [['foo'], ['bar', 'baz']])
 
     def test_parse_after_cnf(self):
         q = Query('"aaa bbb|ccc"')
