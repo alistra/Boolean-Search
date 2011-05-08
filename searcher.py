@@ -80,13 +80,38 @@ class Searcher:
         return docs
 
     def search_phrase(self, query):
-        posting = [self.indexer.get_positional_posting(term)
-                for term in query.terms]
+        posting = []
+        for term in query.terms:
+            bases = self.indexer.normalize(term)
+            base_postings = [self.indexer.get_positional_posting(base) for base in bases] 
+            res = base_postings[0]
+            for p in base_postings[1:]:
+                res = self.merge_phrase_bases(res, p)
+
+            posting.append(res)
+
         res = posting[0]
         for p in posting[1:]:
             res = self.merge_phrase(res, p)
         for doc, pos in res:
             yield doc
+
+    def merge_phrase_bases(self, base1, base2):
+        res = []
+        i1 = i2 = 0
+        while i1 < len(base1) and i2 < len(base2):
+            if base1[i1][0] < base2[i2][0]:
+                res.append(base1[i1])
+                i1 += 1
+            elif base1[i1][0] > base2[i2][0]:
+                res.append(base2[i2])
+                i2 += 1
+            else:
+                res.append([base1[i1][0],
+                    list(self.merge_or_docs(base1[i1][1], base2[i2][1]))])
+                i1 += 1
+                i2 += 1
+        return res
 
     def merge_phrase(self, docs1, docs2):
         try:
@@ -99,14 +124,27 @@ class Searcher:
                     d1, k1 = next(iter1)
                 elif d2 < d1:
                     d2, k2 = next(iter2)
-                elif k1 + 1 < k2:
-                    d1, k1 = next(iter1)
-                elif k1 + 1 > k2:
-                    d2, k2 = next(iter2)
                 else:
-                    yield d1
-                    d1, k1 = next(iter1)
-                    d2, k2 = next(iter2)
+                    positions = []
+                    try:
+                        pos_iter1 = iter(k1)
+                        pos_iter2 = iter(k2)
+                        pos1 = next(pos_iter1)
+                        pos2 = next(pos_iter2)
+                        while True:
+                            if pos1 + 1 < pos2:
+                                pos1 = next(pos_iter1)
+                            elif pos1 + 1 > pos2:
+                                pos2 = next(pos_iter2)
+                            else:
+                                positions.append(pos2)
+                                pos1 = next(pos_iter1)
+                                pos2 = next(pos_iter2)
+                    except StopIteration:
+                        if positions != []:
+                            yield [d1, positions]
+                        d1, k1 = next(iter1)
+                        d2, k2 = next(iter2)
         except StopIteration:
             pass
 
@@ -255,20 +293,6 @@ class Searcher:
             start = n+1
         for i in range(start, document_count+1):
             yield(i)
-
-#który jest dobrze?
-#    def subtract_from_uni(self, N, d):
-#        '''Generator for subtracting a posting from the universe'''
-#        e2 = next(d)
-#        for n in range(1, N + 1):
-#            if i >= len(d) or n < d[i]:
-#                yield n
-#            elif n == d[i]:
-#                i += 1
-#            else:
-#                while d[i] < n:
-#                    i += 1
-
 
     def subtract(self, docs1, docs2):
         """Generator for subtracting two lists in O(m + n) time."""
