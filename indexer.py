@@ -296,7 +296,7 @@ def main():
     """Does some indexer testing"""
 
     indexer = Indexer(compressed = False, debug = True)
-    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
+    #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
 
 if __name__ == "__main__":
     main()
