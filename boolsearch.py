@@ -8,26 +8,16 @@ try:
 except:
     pass
 
-def search(s, i, num):
+def search(s, i, queries):
     '''Perform a search on a batch of queries'''
-    queries = []
-    results = []
     query_words = {}
     query_normalized_words = {}
-    eof = False
+    
+    for query in queries:
+        for word in query.get_words():
+            query_words.setdefault(word[:3], set()).add(word)
 
-    i.morfologik_cache.clear()
-    i.index_cache.clear()
-
-    for _ in range(num):
-        try:
-            query = searcher.Query(input())
-            for word in query.get_words():
-                query_words.setdefault(word[:3], set()).add(word)
-            queries.append(query)
-        except EOFError:
-            eof = True
-            break
+    #print('normalizing')
 
     for prefix in query_words:
         words = query_words[prefix]
@@ -35,33 +25,56 @@ def search(s, i, num):
         for word in words:
             for base in i.normalize(word):
                 query_normalized_words.setdefault(base[:3], set()).add(base)
-            
+    
+    #print('loading index')
+
     for prefix in query_normalized_words:
         i.load_to_index_cache(query_normalized_words[prefix], prefix)
-
-    for query in queries:
-        results.append(s.search(query))
-
-    i.morfologik_cache.clear()
-    i.index_cache.clear()
+        #for word in query_normalized_words[prefix]:
+        #    i.index_cache[word] = [(1, 2), (2, 5), (3, 1)]
+ 
+    #size_sum = 0
+    #for word in i.index_cache:
+    #    size = i.index_cache[word].__sizeof__()
+    #    print('size of', word, 'is', size)
+    #    size_sum += size
+    #print('sum =', size_sum)
 
     i.load_titles()
 
-    for nr in range(len(results)):
-        res_list = list(results[nr])
-        print('QUERY:', queries[nr], 'TOTAL:', len(res_list))
-        for doc in res_list: #redo with join
+    #print('searching')
+
+    for query in queries:
+        result = list(s.search(query))
+        print('QUERY:', query, 'TOTAL:', len(result))
+        for doc in result:
             print(i.get_title(doc))
+    
+    i.titles = []
+    i.morfologik_cache.clear()
+    i.index_cache.clear()
 
-    return not eof
 
-i = indexer.Indexer(compressed=True)
-s = searcher.Searcher(i)
+if __name__ == "__main__":
+    i = indexer.Indexer()
+    s = searcher.Searcher(i)
 
-if len(sys.argv) > 1 and sys.argv[1] == 'i':
-    n = 1
-else:
-    n = 1000
+    if len(sys.argv) > 1 and sys.argv[1] == 'i':
+        n = 1
+    else:
+        n = 10
 
-while search(s, i, n):
-    pass
+    try:
+        eof = False
+        while not eof:
+            queries = []
+            for _ in range(n):
+                try:
+                    queries.append(searcher.Query(input()))
+                except EOFError:
+                    eof = True
+                    break
+            if queries != []:
+                search(s, i, queries)
+    except KeyboardInterrupt:
+        pass
