@@ -14,10 +14,8 @@ def immediate_print(string):
 class Indexer:
     """A class for generating index files and getting posting lists"""
     morfologik = {}
-
     morfologik_cache = {}
     index_cache = {}
-
     titles = []
     document_count = 0
 
@@ -138,13 +136,15 @@ class Indexer:
             
             if key[:3] == prefix:
                 if key in index_dict:
-                    if index_dict[key][-1] != value:
-                        index_dict[key].append(value)
+                    if index_dict[key][-1][0] == value[0]:
+                        index_dict[key][-1][1].append(value[1])
+                    else:
+                        index_dict[key].append([value[0], [value[1]]])
                 else:
                     if morfologik:
                         index_dict[key] = value
                     else:
-                        index_dict[key] = [value]
+                        index_dict[key] = [[value[0], [value[1]]]]
             else:
                 if prefix != "":
 
@@ -160,8 +160,7 @@ class Indexer:
                 if morfologik:
                     index_dict[key] = value
                 else:
-                    index_dict[key] = [value]
-
+                    index_dict[key] = [[value[0], [value[1]]]]
                 prefix = key[:3]
 
         if self.compressed and not morfologik:
