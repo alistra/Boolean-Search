@@ -232,21 +232,21 @@ class Indexer:
         '''Load the info about words from a morfologik file to a morfologik cache'''
         if words != []:
             filename = os.path.join(self.index_dir, 'morfologik', prefix)
-            self.load_to_cache(self.morfologik_cache, words, filename)
+            self.load_to_cache(self.morfologik_cache, words, filename, True)
 
     def load_to_index_cache(self, words, prefix):
         '''Load the info about words from an index file to the index cache'''
         if words != []:
             filename = os.path.join(self.index_dir, prefix)
-            self.load_to_cache(self.index_cache, words, filename)
+            self.load_to_cache(self.index_cache, words, filename, False)
 
-    def load_to_cache(self, cache, words, filename):
+    def load_to_cache(self, cache, words, filename, morfologik):
         '''Load the info about words from a file to a cache'''
         if os.path.exists(filename):
             dic = self.load(filename)
             for word in words:
                 if word in dic:
-                    if self.compressed:
+                    if self.compressed and not morfologik:
                         posting = Indexer.dedifferentiate_posting(dic[word])
                     else:
                         posting = dic[word]
