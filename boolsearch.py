@@ -50,12 +50,12 @@ def search(s, i, num):
     for nr in range(len(results)):
         res_list = list(results[nr])
         print('QUERY:', queries[nr], 'TOTAL:', len(res_list))
-        for doc in res_list:
+        for doc in res_list: #redo with join
             print(i.get_title(doc))
 
     return not eof
 
-i = indexer.Indexer()
+i = indexer.Indexer(compressed=True)
 s = searcher.Searcher(i)
 
 if len(sys.argv) > 1 and sys.argv[1] == 'i':

@@ -85,13 +85,6 @@ class Indexer:
         else:
             return os.path.join(self.index_dir, 'TITLES.marshal')
 
-    def morfologik_path(self):
-        """Returns a path to the morfologik dictionary file"""
-        if self.compressed:
-            return os.path.join(self.index_dir, 'MORFOLOGIK.marshal.gz')
-        else:
-            return os.path.join(self.index_dir, 'MORFOLOGIK.marshal')
-
     def generate_index_file(self, filename, out_filename):
         """Generates big unsorted index file with the info about all word occurences"""
 
@@ -154,16 +147,25 @@ class Indexer:
                         index_dict[key] = [value]
             else:
                 if prefix != "":
+
+                    if self.compressed and not morfologik:
+                        index_dict = Indexer.differentiate_dict(index_dict)
                     self.dump(index_dict, os.path.join(out_directory, prefix))
+
                     if self.debug:
                         immediate_print("dumping dict %(filename)s" % {'filename': os.path.join(out_directory, prefix)})
+
                     index_dict.clear()
+
                 if morfologik:
                     index_dict[key] = value
                 else:
                     index_dict[key] = [value]
+
                 prefix = key[:3]
 
+        if self.compressed and not morfologik:
+            index_dict = Indexer.differentiate_dict(index_dict)
         self.dump(index_dict, os.path.join(out_directory, prefix))
     
     @staticmethod
@@ -178,19 +180,33 @@ class Indexer:
     def differentiate_posting(posting):
         """Differentiaties posting lists"""
         if not posting == []:
-            counter = 0
+            doc_counter = 0
+            pos_counter = 0
             for elem in posting:
-                yield(elem - counter)
-                counter = elem
+                doc = elem[0]
+                pos = elem[1]
+                if doc > doc_counter:
+                    pos_counter = 0
+                ndoc = doc - doc_counter
+                npos = pos - pos_counter
+                doc_counter = doc
+                pos_counter = pos
+                yield (ndoc,npos)
 
     @staticmethod
     def dedifferentiate_posting(posting):
         """Dedifferentiates posting lists"""
         if not posting == []:
-            counter = 0
+            doc_counter = 0
+            pos_counter = 0
             for elem in posting:
-                yield(elem + counter)
-                counter += elem
+                doc = elem[0]
+                pos = elem[1]
+                if doc > 0:
+                    pos_counter = 0
+                doc_counter += doc
+                pos_counter += pos
+                yield (doc_counter, pos_counter)
 
     def dump_titles(self):
         """Dumps titles info into a marshalled file"""
@@ -200,8 +216,6 @@ class Indexer:
         """Dumps an object to a file"""
         if self.compressed:
             handle = gzip.open(filename, 'wb')
-            if type(obj) == dict:
-                obj = Indexer.differentiate_dict(obj)
         else:
             handle = open(filename, 'wb')
         marshal.dump(obj, handle, 2)
@@ -295,8 +309,7 @@ class Indexer:
 def main():
     """Does some indexer testing"""
 
-    indexer = Indexer(compressed = False, debug = True)
-    #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
-
+    indexer = Indexer(compressed = True, debug = True)
+    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
 if __name__ == "__main__":
     main()
