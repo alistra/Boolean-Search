@@ -19,16 +19,21 @@ class Indexer:
     titles = []
     document_count = 0
 
-    def __init__(self, index_dir = "index", compressed = False, stemmed = False, debug = False):
+    def __init__(self, index_dir = "index",
+            compressed = False, stemmed = False, debug = False):
         self.stemmed = stemmed
         self.compressed = compressed
         self.index_dir = index_dir
         self.debug = debug
         if self.stemmed:
-            self.stemsufix = re.compile(r'(.*)((logia|janin|owanie)|(czyk|rzeć|arty|enie|ślać|acja|ować)|(ość|cie|ski|cie|ium|owy|jać|ent|nie|lać|ieć|nąć|izm|iel|yzm|acz)|(ny|ić|ać|na|eć|ki|yć|ek|yk|ik|ów)|(a|y|e|o))$')
+            self.stemsufix = re.compile(r'''(.*)((logia|janin|owanie)|\
+                                                (czyk|rzeć|arty|enie|ślać|acja|ować)|\
+                                                (ość|cie|ski|cie|ium|owy|jać|ent|nie|lać|ieć|nąć|izm|iel|yzm|acz)|\
+                                                (ny|ić|ać|na|eć|ki|yć|ek|yk|ik|ów)|\
+                                                (a|y|e|o))$''')
 
     def create_index(self, data_file, morfologik_file):
-        """Create new index."""
+        """Create a new index."""
         if not os.path.exists(self.index_dir):
             os.mkdir(self.index_dir)
 
@@ -56,12 +61,14 @@ class Indexer:
 
         if self.debug:
             immediate_print("dumping document titles")
-        self.dump_titles()
+        self.dump_titles('TITLES')
 
         if self.debug:
             immediate_print("sorting morfologik")
         Indexer.sort_file(morfologik_file, 'MORFOLOGIK.sorted')
 
+        if self.debug:
+            immediate_print("generating morfologik index")
         self.generate_dicts("MORFOLOGIK.sorted",
                 os.path.join(self.index_dir, "morfologik"), True)
 
@@ -69,56 +76,51 @@ class Indexer:
             os.remove('MORFOLOGIK.sorted')
 
     def initialize_morfologik(self, morfologik_filename):
-        """Generates morfologic-data dictionary and caches it, restores if it was cached already"""
+        """Generates morfologik dictionary from a file"""
         if self.morfologik == {}:
             morfologik_handle = open(morfologik_filename, 'r')
             for line in morfologik_handle:
                 forms = line.rstrip().split(' ')
                 self.morfologik[forms[0]] = forms[1:]
 
-    def titles_path(self):
-        """Returns a path to the titles info file"""
-        if self.compressed:
-            return os.path.join(self.index_dir, 'TITLES.marshal.gz')
-        else:
-            return os.path.join(self.index_dir, 'TITLES.marshal')
-
     def generate_index_file(self, filename, out_filename):
-        """Generates big unsorted index file with the info about all word occurences"""
+        """Generates unsorted index file with the word occurences"""
 
-        self.document_count = 0
+        doc_count = 0
         word_regexp = re.compile(r'\w+')
         file_handle = open(filename, 'r')
         indexfile_handle = open(out_filename, 'w') 
-        word_per_doc_count = 0
+        word_count = 0
     
-        illegal_char_regexp = re.compile(r'[^1234567890qwertyuiopasdfghjklzxcvbnmęóąśłżźćń]')
+        illegal_char_regexp = re.compile(r'[^0-9a-zęóąśłżźćń]')
 
         for line in file_handle:
             if line[:9] == '##TITLE##':
-                if self.debug and self.document_count % 1000 == 0:
-                    immediate_print('%(count)d documents indexed' % {'count': self.document_count})
-                self.document_count += 1
+                if self.debug and doc_count % 1000 == 0:
+                    immediate_print('%(count)d documents indexed' 
+                        % {'count': doc_count})
+                doc_count += 1
                 self.titles.append(line[10:].strip())
-                word_per_doc_count = 0
+                word_count = 0
             else:
                 for word in word_regexp.findall(line):
-                    word_per_doc_count += 1
+                    word_count += 1
                     bases = self.normalize(word)
                     for base in bases:
                         if illegal_char_regexp.search(base):
                             continue
-                        indexfile_handle.write("%(base)s %(count)d %(pos)d\n" % {'base': base, 'count': self.document_count, 'pos': word_per_doc_count})
+                        indexfile_handle.write("%(b)s %(c)d %(p)d\n" %
+                            {'b': base, 'c': doc_count, 'p': word_count})
 
     @staticmethod
     def sort_file(filename, dest):
         """Sorts the big index file"""
         os.system("LC_ALL=C sort -T. -k1,1 -s " + filename + " > " + dest)
 
-    def generate_dicts(self, sorted_filename, out_directory, morfologik = False):
-        """Generates the three letter dictionary files from the big sorted index file"""
-        if not os.path.exists(out_directory):
-            os.mkdir(out_directory)
+    def generate_dicts(self, sorted_filename, out_dir, morfologik = False):
+        """Generates prefix dictionaries from the sorted index file"""
+        if not os.path.exists(out_dir):
+            os.mkdir(out_dir)
 
         indexfile_handle = open(sorted_filename)
         index_dict = {}
@@ -129,6 +131,7 @@ class Indexer:
                 immediate_print("%(count)d parsed lines" % {'count': i})
             words = line.rstrip().split(' ')
             key = words[0]
+
             if not morfologik:
                 value = (int(words[1]), int(words[2]))
             else:
@@ -150,10 +153,11 @@ class Indexer:
 
                     if self.compressed and not morfologik:
                         index_dict = Indexer.differentiate_dict(index_dict)
-                    self.dump(index_dict, os.path.join(out_directory, prefix))
+                    self.dump(index_dict, os.path.join(out_dir, prefix))
 
                     if self.debug:
-                        immediate_print("dumping dict %(filename)s" % {'filename': os.path.join(out_directory, prefix)})
+                        immediate_print("dumping dict %(filename)s" % 
+                            {'filename': os.path.join(out_dir, prefix)})
 
                     index_dict.clear()
 
@@ -165,7 +169,7 @@ class Indexer:
 
         if self.compressed and not morfologik:
             index_dict = Indexer.differentiate_dict(index_dict)
-        self.dump(index_dict, os.path.join(out_directory, prefix))
+        self.dump(index_dict, os.path.join(out_dir, prefix))
     
     @staticmethod
     def differentiate_dict(dic):
@@ -174,42 +178,44 @@ class Indexer:
             dic[key] = list(Indexer.differentiate_posting(dic[key]))
         return dic
 
-
     @staticmethod
-    def differentiate_posting(posting):
+    def differentiate_posting(posting, positional = False):
         """Differentiaties posting lists"""
         if not posting == []:
             doc_counter = 0
-            pos_counter = 0
-            for elem in posting:
-                doc = elem[0]
-                pos = elem[1]
-                if doc > doc_counter:
-                    pos_counter = 0
-                ndoc = doc - doc_counter
-                npos = pos - pos_counter
-                doc_counter = doc
-                pos_counter = pos
-                yield (ndoc,npos)
+            if not positional:
+                for elem in posting:
+                    doc = elem[0]
+                    pos = elem[1]
+                    ndoc = doc - doc_counter
+                    npos = list(Indexer.differentiate_posting(pos, True))
+                    doc_counter = doc
+                    yield (ndoc, npos)
+            else:
+                for elem in posting:
+                    yield (elem - doc_counter)
+                    doc_counter = elem
 
     @staticmethod
-    def dedifferentiate_posting(posting):
+    def dedifferentiate_posting(posting, positional = False):
         """Dedifferentiates posting lists"""
         if not posting == []:
             doc_counter = 0
-            pos_counter = 0
-            for elem in posting:
-                doc = elem[0]
-                pos = elem[1]
-                if doc > 0:
-                    pos_counter = 0
-                doc_counter += doc
-                pos_counter += pos
-                yield (doc_counter, pos_counter)
+            if positional:
+                for elem in posting:
+                    doc_counter += elem
+                    yield(doc_counter)
+            else:
+                for elem in posting:
+                    doc = elem[0]
+                    pos = elem[1]
+                    doc_counter += doc
+                    npos = Indexer.dedifferentiate_posting(pos, True)
+                    yield (doc_counter, npos)
 
-    def dump_titles(self):
+    def dump_titles(self, filename):
         """Dumps titles info into a marshalled file"""
-        self.dump(self.titles, self.titles_path())
+        self.dump(self.titles, filename)
 
     def dump(self, obj, filename):
         """Dumps an object to a file"""
@@ -228,13 +234,13 @@ class Indexer:
         return marshal.load(handle)
 
     def load_to_morfologik_cache(self, words, prefix):
-        '''Load the info about words from a morfologik file to a morfologik cache'''
+        '''morfologik wrapper to load_to_cache'''
         if words != []:
             filename = os.path.join(self.index_dir, 'morfologik', prefix)
             self.load_to_cache(self.morfologik_cache, words, filename, True)
 
     def load_to_index_cache(self, words, prefix):
-        '''Load the info about words from an index file to the index cache'''
+        '''index wrapper to load_to_cache'''
         if words != []:
             filename = os.path.join(self.index_dir, prefix)
             self.load_to_cache(self.index_cache, words, filename, False)
@@ -280,11 +286,8 @@ class Indexer:
         else:
             return word
     
-    def load_titles(self):
+    def load_titles(self, filename):
         """Loads the titles count info"""
-        if self.debug:
-            immediate_print("loading titles from a file")
-        filename = self.titles_path()
         self.titles = self.load(filename)
         self.document_count = len(self.titles)
 
@@ -299,16 +302,14 @@ class Indexer:
     def get_posting(self, word):
         """Gets a document posting for a given word"""
         posposting = self.get_positional_posting(word)
-        old = 0
         for pos in posposting:
-            if pos[0] != old:
-                yield(pos[0])
-                old = pos[0]
+            yield(pos[0])
 
 def main():
     """Does some indexer testing"""
 
     indexer = Indexer(compressed = True, debug = True)
-    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt', 'data/morfologik_do_wyszukiwarek.txt')
+    #indexer.create_index('data/wiki100k',
+    #   'data/morfologik_do_wyszukiwarek.txt')
 if __name__ == "__main__":
     main()

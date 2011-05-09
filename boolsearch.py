@@ -40,7 +40,7 @@ def search(s, i, queries):
     #    size_sum += size
     #print('sum =', size_sum)
 
-    i.load_titles()
+    i.load_titles('TITLES')
 
     #print('searching')
 
@@ -56,7 +56,7 @@ def search(s, i, queries):
 
 
 if __name__ == "__main__":
-    i = indexer.Indexer()
+    i = indexer.Indexer(compressed=True)
     s = searcher.Searcher(i)
 
     if len(sys.argv) > 1 and sys.argv[1] == 'i':
