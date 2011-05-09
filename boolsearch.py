@@ -52,6 +52,7 @@ def search(searcher_obj, indexer_obj, queries):
 if __name__ == "__main__":
     indexer_obj = indexer.Indexer()
     indexer_obj.detect_compression()
+    indexer_obj.detect_prefix_len()
     searcher_obj = searcher.Searcher(indexer_obj)
 
 # nie wiem co kurwa sie dzieje ponizej tej linii

@@ -42,6 +42,16 @@ class Indexer:
         else:
             self.compressed = False
 
+    def detect_prefix_len(self):
+        '''Set the prefix length according to the index'''
+        prefix_len_flag = os.path.join(self.index_dir, 'PREFIX_LENGTH')
+        if os.path.exists(prefix_len_flag):
+            prefix_len_handle = open(prefix_len_flag, 'r')
+            self.prefix_len = int(next(prefix_len_handle))
+        else:
+            raise Exception("No prefix length information in the index")
+
+
     def create_index(self, data_file, morfologik_file):
         """Create a new index."""
         if not os.path.exists(self.index_dir):
@@ -53,6 +63,11 @@ class Indexer:
             open(compflag, 'w').close()
         elif os.path.exists(compflag):
             os.remove(compflag)
+
+        prefixlenflag = os.path.join(self.index_dir, 'PREFIX_LENGTH')
+        prefixlenhandle = open(prefixlenflag, 'w')
+        prefixlenhandle.write(self.prefix_len)
+        prefixlenhandle.close()
 
         if self.debug:
             immediate_print("initializing morfologik")
@@ -326,7 +341,7 @@ def main():
     """Does some indexer testing"""
 
     indexer = Indexer(compressed = True, debug = True, prefix_len = 5)
-    indexer.create_index('data/wiki100k',
+    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt',
        'data/morfologik_do_wyszukiwarek.txt')
 if __name__ == "__main__":
     main()
