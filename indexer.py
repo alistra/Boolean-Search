@@ -32,10 +32,25 @@ class Indexer:
                                                 (ny|ić|ać|na|eć|ki|yć|ek|yk|ik|ów)|\
                                                 (a|y|e|o))$''')
 
+    def detect_compression(self):
+        '''Set the compressed flag according to the index'''
+        compflag = os.path.join(self.index_dir, 'COMPRESSED')
+        if os.path.exists(compflag):
+            self.compressed = True
+        else:
+            self.compressed = False
+
     def create_index(self, data_file, morfologik_file):
         """Create a new index."""
         if not os.path.exists(self.index_dir):
             os.mkdir(self.index_dir)
+
+        compflag = os.path.join(self.index_dir, 'COMPRESSED')
+        
+        if self.compressed:
+            open(compflag, 'w').close()
+        elif os.path.exists(compflag):
+            os.remove(compflag)
 
         if self.debug:
             immediate_print("initializing morfologik")

@@ -5,9 +5,11 @@ import itertools
 import re
 
 class EmptyQuery(Exception):
+    '''Exception for empty query'''
     pass
 
 class Query:
+    '''Class for parsing and storing queries'''
     def __init__(self, query = ""):
         self.terms = []
         self.clauses = []
@@ -15,6 +17,7 @@ class Query:
         self.parse(query)
 
     def parse(self, query_str):
+        '''Dispatches the parsing of the query'''
         if query_str != "":
             if query_str[0] == '"' and query_str[-1] == '"':
                 self.parse_phrase(query_str)
@@ -22,12 +25,14 @@ class Query:
                 self.parse_cnf(query_str)
 
     def parse_phrase(self, query_str):
+        '''Parses the query as a phrase'''
         self.terms = query_str[1:-1].split(' ')
         self.type = "phrase"
         if self.terms == ['']:
             raise EmptyQuery()
 
     def parse_cnf(self, query_str):
+        '''Parses the query as a cnf'''
         self.type = "cnf"
         illegal_char_regexp = re.compile(r'[^1234567890qwertyuiopasdfghjklzxcvbnmęóąśłżźćń~]')
 

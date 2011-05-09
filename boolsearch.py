@@ -5,59 +5,56 @@ import searcher, indexer, sys
 
 try:
     import readline
-except:
+except: #pylint: disable=W0702
     pass
 
-def search(s, i, queries):
-    '''Perform a search on a batch of queries'''
+def get_words_from_queries(query_list):
+    '''Extracts words from queries in a prefix dict form'''
     query_words = {}
-    query_normalized_words = {}
-    
-    for query in queries:
+    for query in query_list:
         for word in query.get_words():
             query_words.setdefault(word[:3], set()).add(word)
+    return query_words
 
-    #print('normalizing')
-
+def normalize_words(indexer_obj, query_words):
+    '''Creates prefix dict for normalized words'''
+    query_normalized_words = {}
     for prefix in query_words:
         words = query_words[prefix]
-        i.load_to_morfologik_cache(words, prefix)
+        indexer_obj.load_to_morfologik_cache(words, prefix)
         for word in words:
-            for base in i.normalize(word):
+            for base in indexer_obj.normalize(word):
                 query_normalized_words.setdefault(base[:3], set()).add(base)
+    return query_normalized_words
+
+def search(searcher_obj, indexer_obj, queries):
+    '''Perform a search on a batch of queries'''
+    query_words = get_words_from_queries(queries)
+
+    query_normalized_words = normalize_words(indexer_obj, query_words)
     
-    #print('loading index')
-
     for prefix in query_normalized_words:
-        i.load_to_index_cache(query_normalized_words[prefix], prefix)
-        #for word in query_normalized_words[prefix]:
-        #    i.index_cache[word] = [(1, 2), (2, 5), (3, 1)]
- 
-    #size_sum = 0
-    #for word in i.index_cache:
-    #    size = i.index_cache[word].__sizeof__()
-    #    print('size of', word, 'is', size)
-    #    size_sum += size
-    #print('sum =', size_sum)
+        indexer_obj.load_to_index_cache(query_normalized_words[prefix], prefix)
 
-    i.load_titles('TITLES')
-
-    #print('searching')
+    indexer_obj.load_titles('TITLES')
 
     for query in queries:
-        result = list(s.search(query))
+        result = [indexer_obj.get_title(doc) 
+                    for doc in searcher_obj.search(query)]
+        result_str = "\n".join(result)
         print('QUERY:', query, 'TOTAL:', len(result))
-        for doc in result:
-            print(i.get_title(doc))
+        print(result_str)
     
-    i.titles = []
-    i.morfologik_cache.clear()
-    i.index_cache.clear()
-
+    indexer_obj.titles = []
+    indexer_obj.morfologik_cache.clear() #moze zostawic te 2 linie?
+    indexer_obj.index_cache.clear() 
 
 if __name__ == "__main__":
-    i = indexer.Indexer(compressed=True)
-    s = searcher.Searcher(i)
+    indexer_obj = indexer.Indexer()
+    indexer_obj.detect_compression()
+    searcher_obj = searcher.Searcher(indexer_obj)
+
+# nie wiem co kurwa sie dzieje ponizej tej linii
 
     if len(sys.argv) > 1 and sys.argv[1] == 'i':
         n = 1
@@ -75,6 +72,6 @@ if __name__ == "__main__":
                     eof = True
                     break
             if queries != []:
-                search(s, i, queries)
+                search(searcher_obj, indexer_obj, queries)
     except KeyboardInterrupt:
         pass
