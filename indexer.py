@@ -19,12 +19,14 @@ class Indexer:
     titles = []
     document_count = 0
 
-    def __init__(self, index_dir = "index",
-            compressed = False, stemmed = False, debug = False):
+    def __init__(self, index_dir = "index", compressed = False, stemmed = False,
+            debug = False, prefix_len = 3):
+
         self.stemmed = stemmed
         self.compressed = compressed
         self.index_dir = index_dir
         self.debug = debug
+        self.prefix_len = prefix_len
         if self.stemmed:
             self.stemsufix = re.compile(r'''(.*)((logia|janin|owanie)|\
                                                 (czyk|rzeć|arty|enie|ślać|acja|ować)|\
@@ -152,7 +154,7 @@ class Indexer:
             else:
                 value = words[1:]
             
-            if key[:3] == prefix:
+            if key[:self.prefix_len] == prefix:
                 if key in index_dict:
                     if index_dict[key][-1][0] == value[0]:
                         index_dict[key][-1][1].append(value[1])
@@ -180,7 +182,7 @@ class Indexer:
                     index_dict[key] = value
                 else:
                     index_dict[key] = [[value[0], [value[1]]]]
-                prefix = key[:3]
+                prefix = key[:self.prefix_len]
 
         if self.compressed and not morfologik:
             index_dict = Indexer.differentiate_dict(index_dict)
@@ -292,7 +294,7 @@ class Indexer:
     
     def stem(self, word):
         """Stems the word"""
-        if len(word) <= 3:
+        if len(word) <= self.prefix_len:
             return word
 
         mat = self.stemsufix.match(word)
@@ -323,8 +325,8 @@ class Indexer:
 def main():
     """Does some indexer testing"""
 
-    indexer = Indexer(compressed = True, debug = True)
-    #indexer.create_index('data/wiki100k',
-    #   'data/morfologik_do_wyszukiwarek.txt')
+    indexer = Indexer(compressed = True, debug = True, prefix_len = 5)
+    indexer.create_index('data/wiki100k',
+       'data/morfologik_do_wyszukiwarek.txt')
 if __name__ == "__main__":
     main()

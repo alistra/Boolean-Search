@@ -34,7 +34,7 @@ class Query:
     def parse_cnf(self, query_str):
         '''Parses the query as a cnf'''
         self.type = "cnf"
-        illegal_char_regexp = re.compile(r'[^1234567890qwertyuiopasdfghjklzxcvbnmęóąśłżźćń~]')
+        illegal_char_regexp = re.compile(r'[^0-9a-zęóąśłżźćń~]')
 
         self.clauses = [clause.split('|') for clause in query_str.split(' ') if clause != '']
         for clause in self.clauses:

@@ -8,12 +8,12 @@ try:
 except: #pylint: disable=W0702
     pass
 
-def get_words_from_queries(query_list):
+def get_words_from_queries(indexer_obj, query_list):
     '''Extracts words from queries in a prefix dict form'''
     query_words = {}
     for query in query_list:
         for word in query.get_words():
-            query_words.setdefault(word[:3], set()).add(word)
+            query_words.setdefault(word[:indexer_obj.prefix_len], set()).add(word)
     return query_words
 
 def normalize_words(indexer_obj, query_words):
@@ -24,12 +24,12 @@ def normalize_words(indexer_obj, query_words):
         indexer_obj.load_to_morfologik_cache(words, prefix)
         for word in words:
             for base in indexer_obj.normalize(word):
-                query_normalized_words.setdefault(base[:3], set()).add(base)
+                query_normalized_words.setdefault(base[:indexer_obj.prefix_len], set()).add(base)
     return query_normalized_words
 
 def search(searcher_obj, indexer_obj, queries):
     '''Perform a search on a batch of queries'''
-    query_words = get_words_from_queries(queries)
+    query_words = get_words_from_queries(indexer_obj, queries)
 
     query_normalized_words = normalize_words(indexer_obj, query_words)
     
