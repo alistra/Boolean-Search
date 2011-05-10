@@ -36,17 +36,17 @@ class Indexer:
 
     def detect_compression(self):
         '''Set the compressed flag according to the index'''
-        compflag = os.path.join(self.index_dir, 'COMPRESSED')
-        if os.path.exists(compflag):
+        comp_file = os.path.join(self.index_dir, 'COMPRESSED')
+        if os.path.exists(comp_file):
             self.compressed = True
         else:
             self.compressed = False
 
     def detect_prefix_len(self):
         '''Set the prefix length according to the index'''
-        prefix_len_flag = os.path.join(self.index_dir, 'PREFIX_LENGTH')
-        if os.path.exists(prefix_len_flag):
-            prefix_len_handle = open(prefix_len_flag, 'r')
+        prefix_len_file = os.path.join(self.index_dir, 'PREFIX_LENGTH')
+        if os.path.exists(prefix_len_file):
+            prefix_len_handle = open(prefix_len_file, 'r')
             self.prefix_len = int(next(prefix_len_handle))
         else:
             raise Exception("No prefix length information in the index")
@@ -64,18 +64,33 @@ class Indexer:
         elif os.path.exists(compflag):
             os.remove(compflag)
 
-        prefixlenflag = os.path.join(self.index_dir, 'PREFIX_LENGTH')
-        prefixlenhandle = open(prefixlenflag, 'w')
-        prefixlenhandle.write(self.prefix_len)
-        prefixlenhandle.close()
+        prefix_len_file = os.path.join(self.index_dir, 'PREFIX_LENGTH')
+        prefix_len_handle = open(prefix_len_file, 'w')
+        prefix_len_handle.write(str(self.prefix_len))
 
         if self.debug:
             immediate_print("initializing morfologik")
         self.initialize_morfologik(morfologik_file)
         
         if self.debug:
+            immediate_print("sorting morfologik")
+        Indexer.sort_file(morfologik_file, 'MORFOLOGIK.sorted')
+
+        if self.debug:
+            immediate_print("generating morfologik index")
+        self.generate_dicts("MORFOLOGIK.sorted",
+                os.path.join(self.index_dir, "morfologik"), True)
+
+        if not self.debug:
+            os.remove('MORFOLOGIK.sorted')
+
+        if self.debug:
             immediate_print("gathering document data")
         self.generate_index_file(data_file, 'WORDS')
+
+        if self.debug:
+            immediate_print("dumping document titles")
+        self.dump_titles('TITLES')
 
         if self.debug:
             immediate_print("sorting document data")
@@ -91,21 +106,6 @@ class Indexer:
         if not self.debug:
             os.remove('WORDS.sorted')
 
-        if self.debug:
-            immediate_print("dumping document titles")
-        self.dump_titles('TITLES')
-
-        if self.debug:
-            immediate_print("sorting morfologik")
-        Indexer.sort_file(morfologik_file, 'MORFOLOGIK.sorted')
-
-        if self.debug:
-            immediate_print("generating morfologik index")
-        self.generate_dicts("MORFOLOGIK.sorted",
-                os.path.join(self.index_dir, "morfologik"), True)
-
-        if not self.debug:
-            os.remove('MORFOLOGIK.sorted')
 
     def initialize_morfologik(self, morfologik_filename):
         """Generates morfologik dictionary from a file"""
@@ -321,6 +321,7 @@ class Indexer:
     def load_titles(self, filename):
         """Loads the titles count info"""
         self.titles = self.load(filename)
+        print(len(self.titles))
         self.document_count = len(self.titles)
 
     def get_title(self, article_number):
