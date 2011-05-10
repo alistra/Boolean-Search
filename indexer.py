@@ -280,7 +280,7 @@ class Indexer:
             for word in words:
                 if word in dic:
                     if self.compressed and not morfologik:
-                        posting = Indexer.dedifferentiate_posting(dic[word])
+                        posting = list(Indexer.dedifferentiate_posting(dic[word]))
                     else:
                         posting = dic[word]
                     cache[word] = posting
