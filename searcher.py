@@ -103,20 +103,38 @@ class Searcher:
 
     def merge_phrase_bases(self, base1, base2):
         res = []
-        i1 = i2 = 0
-        while i1 < len(base1) and i2 < len(base2):
-            if base1[i1][0] < base2[i2][0]:
-                res.append(base1[i1])
-                i1 += 1
-            elif base1[i1][0] > base2[i2][0]:
-                res.append(base2[i2])
-                i2 += 1
-            else:
-                res.append([base1[i1][0],
-                    list(self.merge_or_docs(base1[i1][1], base2[i2][1]))])
-                i1 += 1
-                i2 += 1
-        return res
+        iter1 = iter(base1)
+        iter2 = iter(base2)
+
+        try:
+            last = (1, None)
+            e1 = next(iter1)
+            last = (2, e1)
+            e2 = next(iter2)
+            while True:
+                if e1[0] < e2[0]:
+                    yield e1
+                    last = (1, e2)
+                    e1 = next(iter1)
+                elif e1[0] > e2[0]:
+                    yield e2
+                    last = (2, e1)
+                    e2 = next(iter2)
+                else:
+                    yield e1[0], list(self.merge_or_docs(e1[1], e2[1]))
+                    last = (1, None)
+                    e1 = next(iter1)
+                    last = (2, e1)
+                    e2 = next(iter2)
+        except StopIteration:
+            if last[1]:
+                yield last[1]
+            if last[0] == 1:
+                for e in iter2:
+                    yield e
+            elif last[0] == 2:
+                for e in iter1:
+                    yield e
 
     def merge_phrase(self, docs1, docs2):
         try:
