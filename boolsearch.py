@@ -1,4 +1,4 @@
-#!/usr/bin/python3.1
+#!/usr/bin/python3.1 -OO
 """An executable file for handling queries in an interactive or a batch mode"""
 
 import searcher, indexer, sys

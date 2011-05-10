@@ -1,4 +1,4 @@
-#!/usr/bin/python3.1
+#!/usr/bin/python3.1 -OO
 '''File for the Searcher class and tests for it'''
 import unittest
 import itertools
@@ -154,22 +154,22 @@ class Searcher:
             pass
 
     def search_cnf(self, query):
-        to_list = lambda res: SearchResult(list(res.docs), res.negation)
-        clause_results = [to_list(self.search_clause(clause))
-                for clause in query.clauses]
+        to_list = lambda res: SearchResult(res.docs, res.negation)
+        clause_results = (to_list(self.search_clause(clause))
+                for clause in query.clauses)
 
         # sort by result length
-        clause_results.sort(key = lambda x: len(x.docs))
+        #clause_results.sort(key = lambda x: len(x.docs))
 
-        results = clause_results[0]
-        for clause_result in clause_results[1:]:
+        results = next(clause_results)
+        for clause_result in clause_results:
             results = self.merge_and(results, clause_result)
         return results
       
     def search_clause(self, clause):
-        term_results = [self.search_term(term) for term in clause]
-        results = term_results[0]
-        for term_result in term_results[1:]:
+        term_results = (self.search_term(term) for term in clause)
+        results = next(term_results)
+        for term_result in term_results:
             results = self.merge_or(results, term_result)
         return results
 

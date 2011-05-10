@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.1
+#!/usr/bin/python3.1 -OO
 """File containing the Indexer class and some tests for it"""
 import os
 import re
@@ -245,10 +245,6 @@ class Indexer:
                     npos = Indexer.dedifferentiate_posting(pos, True)
                     yield (doc_counter, npos)
 
-    def dump_titles(self, filename):
-        """Dumps titles info into a marshalled file"""
-        self.dump(self.titles, filename)
-
     def dump(self, obj, filename):
         """Dumps an object to a file"""
         if self.compressed:
@@ -318,10 +314,13 @@ class Indexer:
         else:
             return word
     
+    def dump_titles(self, filename):
+        """Dumps titles info into a marshalled file"""
+        self.dump(self.titles, filename)
+
     def load_titles(self, filename):
         """Loads the titles count info"""
         self.titles = self.load(filename)
-        print(len(self.titles))
         self.document_count = len(self.titles)
 
     def get_title(self, article_number):
@@ -330,13 +329,12 @@ class Indexer:
 
     def get_positional_posting(self, word):
         """Gets a positional posting for a given word"""
-        return self.index_cache.get(word, [])
+        for doc in self.index_cache.get(word, []):
+            yield(doc)
 
     def get_posting(self, word):
         """Gets a document posting for a given word"""
-        posposting = self.get_positional_posting(word)
-        for pos in posposting:
-            yield(pos[0])
+        return (pos[0] for pos in self.get_positional_posting(word))
 
 def main():
     """Does some indexer testing"""
@@ -344,5 +342,6 @@ def main():
     indexer = Indexer(compressed = True, debug = True, prefix_len = 5)
     indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt',
        'data/morfologik_do_wyszukiwarek.txt')
+
 if __name__ == "__main__":
     main()
