@@ -10,31 +10,50 @@ except: #pylint: disable=W0702
 
 def get_words_from_queries(indexer_obj, query_list):
     '''Extracts words from queries in a prefix dict form'''
-    query_words = {}
+    query_words_cnf = {}
+    query_words_phrase = {}
     for query in query_list:
+        if query.type == "cnf":
+            query_words = query_words_cnf
+        elif query.type == "phrase":
+            query_words = query_words_phrase
+
         for word in query.get_words():
             query_words.setdefault(word[:indexer_obj.prefix_len], set()).add(word)
-    return query_words
+    return (query_words_cnf, query_words_phrase)
 
-def normalize_words(indexer_obj, query_words):
+def normalize_words(indexer_obj, query_words_cnf, query_words_phrase):
     '''Creates prefix dict for normalized words'''
-    query_normalized_words = {}
-    for prefix in query_words:
-        words = query_words[prefix]
+    query_normalized_words_cnf = {}
+    query_normalized_words_phrase = {}
+
+    for prefix in query_words_cnf:
+        words = query_words_cnf[prefix]
         indexer_obj.load_to_morfologik_cache(words, prefix)
         for word in words:
             for base in indexer_obj.normalize(word):
-                query_normalized_words.setdefault(base[:indexer_obj.prefix_len], set()).add(base)
-    return query_normalized_words
+                query_normalized_words_cnf.setdefault(base[:indexer_obj.prefix_len], set()).add(base)
+    
+    for prefix in query_words_phrase:
+        words = query_words_phrase[prefix]
+        indexer_obj.load_to_morfologik_cache(words, prefix)
+        for word in words:
+            for base in indexer_obj.normalize(word):
+                query_normalized_words_phrase.setdefault(base[:indexer_obj.prefix_len], set()).add(base)
+
+    return (query_normalized_words_cnf, query_normalized_words_phrase)
 
 def search(searcher_obj, indexer_obj, queries):
     '''Perform a search on a batch of queries'''
-    query_words = get_words_from_queries(indexer_obj, queries)
+    query_words_cnf, query_words_phrase = get_words_from_queries(indexer_obj, queries)
 
-    query_normalized_words = normalize_words(indexer_obj, query_words)
+    query_normalized_words_cnf, query_normalized_words_phrase = normalize_words(indexer_obj, query_words_cnf, query_words_phrase)
     
-    for prefix in query_normalized_words:
-        indexer_obj.load_to_index_cache(query_normalized_words[prefix], prefix)
+    for prefix in query_normalized_words_cnf:
+        indexer_obj.load_to_index_nopos_cache(query_normalized_words_cnf[prefix], prefix)
+
+    for prefix in query_normalized_words_phrase:
+        indexer_obj.load_to_index_cache(query_normalized_words_phrase[prefix], prefix)
 
     indexer_obj.load_titles('TITLES')
 
@@ -46,8 +65,9 @@ def search(searcher_obj, indexer_obj, queries):
         print(result_str)
     
     indexer_obj.titles = []
-    indexer_obj.morfologik_cache.clear() #moze zostawic te 2 linie?
+    indexer_obj.morfologik_cache.clear()
     indexer_obj.index_cache.clear() 
+    indexer_obj.index_nopos_cache.clear()
 
 if __name__ == "__main__":
     indexer_obj = indexer.Indexer()

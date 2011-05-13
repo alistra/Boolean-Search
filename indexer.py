@@ -16,6 +16,7 @@ class Indexer:
     morfologik = {}
     morfologik_cache = {}
     index_cache = {}
+    index_nopos_cache = {}
     titles = []
     document_count = 0
 
@@ -185,7 +186,10 @@ class Indexer:
 
                     if self.compressed and not morfologik:
                         index_dict = Indexer.differentiate_dict(index_dict)
+
                     self.dump(index_dict, os.path.join(out_dir, prefix))
+                    if not morfologik:
+                        self.dump(Indexer.deposition_dict(index_dict), os.path.join(out_dir, "%s.nopos" % prefix))
 
                     if self.debug:
                         immediate_print("dumping dict %(filename)s" % 
@@ -202,7 +206,19 @@ class Indexer:
         if self.compressed and not morfologik:
             index_dict = Indexer.differentiate_dict(index_dict)
         self.dump(index_dict, os.path.join(out_dir, prefix))
+        if not morfologik:
+            self.dump(Indexer.deposition_dict(index_dict), os.path.join(out_dir, "%s.nopos" % prefix))
     
+    @staticmethod
+    def deposition_dict(dic):
+        for key in dic:
+            dic[key] = list(Indexer.deposition_posting(dic[key]))
+        return dic
+
+    @staticmethod
+    def deposition_posting(posting):
+        return [elem[0] for elem in posting]
+
     @staticmethod
     def differentiate_dict(dic):
         '''Differentiate posting lists in a dict'''
@@ -211,16 +227,16 @@ class Indexer:
         return dic
 
     @staticmethod
-    def differentiate_posting(posting, positional = False):
+    def differentiate_posting(posting, nopos = False):
         """Differentiaties posting lists"""
         if not posting == []:
             doc_counter = 0
-            if not positional:
+            if not nopos:
                 for elem in posting:
                     doc = elem[0]
                     pos = elem[1]
                     ndoc = doc - doc_counter
-                    npos = list(Indexer.differentiate_posting(pos, True))
+                    npos = list(Indexer.differentiate_posting(pos, nopos = True))
                     doc_counter = doc
                     yield (ndoc, npos)
             else:
@@ -229,11 +245,11 @@ class Indexer:
                     doc_counter = elem
 
     @staticmethod
-    def dedifferentiate_posting(posting, positional = False):
+    def dedifferentiate_posting(posting, nopos = False):
         """Dedifferentiates posting lists"""
         if not posting == []:
             doc_counter = 0
-            if positional:
+            if nopos:
                 for elem in posting:
                     doc_counter += elem
                     yield(doc_counter)
@@ -242,7 +258,7 @@ class Indexer:
                     doc = elem[0]
                     pos = elem[1]
                     doc_counter += doc
-                    npos = Indexer.dedifferentiate_posting(pos, True)
+                    npos = Indexer.dedifferentiate_posting(pos, nopos = True)
                     yield (doc_counter, npos)
 
     def dump(self, obj, filename):
@@ -265,22 +281,32 @@ class Indexer:
         '''morfologik wrapper to load_to_cache'''
         if words != []:
             filename = os.path.join(self.index_dir, 'morfologik', prefix)
-            self.load_to_cache(self.morfologik_cache, words, filename, True)
+            self.load_to_cache(self.morfologik_cache, words, filename, morfologik = True)
 
     def load_to_index_cache(self, words, prefix):
         '''index wrapper to load_to_cache'''
         if words != []:
             filename = os.path.join(self.index_dir, prefix)
-            self.load_to_cache(self.index_cache, words, filename, False)
+            self.load_to_cache(self.index_cache, words, filename)
 
-    def load_to_cache(self, cache, words, filename, morfologik):
+    def load_to_index_nopos_cache(self, words, prefix):
+        '''index nopos wrapper to load_to_cache'''
+        if words != []:
+            filename = os.path.join(self.index_dir, "%s.nopos" % prefix)
+            self.load_to_cache(self.index_nopos_cache, words, filename, nopos = True)
+
+    def load_to_cache(self, cache, words, filename, morfologik = False, nopos = False):
         '''Load the info about words from a file to a cache'''
         if os.path.exists(filename):
             dic = self.load(filename)
             for word in words:
                 if word in dic:
                     if self.compressed and not morfologik:
-                        posting = Indexer.dedifferentiate_posting(dic[word])
+                        if nopos:
+                            posting = Indexer.dedifferentiate_posting(dic[word], nopos = True)
+                        else:
+                            posting = Indexer.dedifferentiate_posting(dic[word])
+
                     else:
                         posting = dic[word]
                     cache[word] = posting
@@ -334,14 +360,20 @@ class Indexer:
 
     def get_posting(self, word):
         """Gets a document posting for a given word"""
-        return (pos[0] for pos in self.get_positional_posting(word))
+        for doc in self.index_nopos_cache.get(word, []):
+            yield(doc)
 
 def main():
     """Does some indexer testing"""
 
     indexer = Indexer(compressed = True, debug = True, prefix_len = 5)
-    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt',
-       'data/morfologik_do_wyszukiwarek.txt')
+    #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt',
+    #indexer.create_index('data/wiki100k',
+    #   'data/morfologik_do_wyszukiwarek.txt')
+    indexer.load_to_index_cache('w', 'w')
+    indexer.load_to_index_nopos_cache('w', 'w')
+    print(list(indexer.get_positional_posting('w')))
+    print(list(indexer.get_posting('w')))
 
 if __name__ == "__main__":
     main()
