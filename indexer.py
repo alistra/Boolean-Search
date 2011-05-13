@@ -5,6 +5,7 @@ import re
 import marshal
 import sys
 import gzip
+import copy
 
 def immediate_print(string):
     """A function to print and flush the stdout immediately"""
@@ -348,18 +349,18 @@ class Indexer:
     def get_positional_posting(self, word):
         """Gets a document posting with positions for a given word"""
         if self.compressed:
-            posting = Indexer.dedifferentiate_posting(self.index_cache.get(word, []))
+            posting = Indexer.dedifferentiate_posting(copy.copy(self.index_cache.get(word, [])))
         else:
-            posting = self.index_nopos_cache.get(word, [])
+            posting = copy.copy(self.index_nopos_cache.get(word, []))
         for doc in posting:
             yield doc
     
     def get_posting(self, word):
         """Gets a document posting without positions for a given word"""
         if self.compressed:
-            posting = Indexer.dedifferentiate_posting(self.index_nopos_cache.get(word, []), nopos = True)
+            posting = Indexer.dedifferentiate_posting(copy.copy(self.index_nopos_cache.get(word, [])), nopos = True)
         else:
-            posting = self.index_nopos_cache.get(word, [])
+            posting = copy.copy(self.index_nopos_cache.get(word, []))
         for doc in posting:
             yield doc
 
