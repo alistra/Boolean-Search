@@ -75,8 +75,6 @@ if __name__ == "__main__":
     indexer_obj.detect_prefix_len()
     searcher_obj = searcher.Searcher(indexer_obj)
 
-# nie wiem co kurwa sie dzieje ponizej tej linii
-
     if len(sys.argv) > 1 and sys.argv[1] == 'i':
         n = 1
     else:
