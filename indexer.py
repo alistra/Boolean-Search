@@ -279,11 +279,7 @@ class Indexer:
             dic = self.load(filename)
             for word in words:
                 if word in dic:
-                    if self.compressed and not morfologik:
-                        posting = list(Indexer.dedifferentiate_posting(dic[word]))
-                    else:
-                        posting = dic[word]
-                    cache[word] = posting
+                    cache[word] = dic[word]
 
     def lemmatize(self, word):
         """Lemmatize a word"""
@@ -329,12 +325,23 @@ class Indexer:
 
     def get_positional_posting(self, word):
         """Gets a positional posting for a given word"""
-        for doc in self.index_cache.get(word, []):
-            yield(doc)
+        prev = 0
+        for doc, pos in self.index_cache.get(word, []):
+            if self.compressed:
+                prev += doc
+                yield prev, Indexer.dedifferentiate_posting(pos, True)
+            else:
+                yield doc, pos
 
     def get_posting(self, word):
         """Gets a document posting for a given word"""
-        return (pos[0] for pos in self.get_positional_posting(word))
+        prev = 0
+        for doc, _ in self.index_cache.get(word, []):
+            if self.compressed:
+                prev += doc
+                yield prev
+            else:
+                yield doc
 
 def main():
     """Does some indexer testing"""
