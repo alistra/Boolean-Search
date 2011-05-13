@@ -2,5 +2,7 @@ data/*
 index/
 *.pyc
 *.pyo
-doc/*.aux
-doc/*.log
+docs/*.aux
+docs/*.log
+docs/*.pdf
+*.txt
