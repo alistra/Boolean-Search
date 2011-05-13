@@ -63,7 +63,7 @@ def search(searcher_obj, indexer_obj, queries):
         result_str = "\n".join(result)
         print('QUERY:', query, 'TOTAL:', len(result))
         print(result_str)
-    
+
     indexer_obj.titles = []
     indexer_obj.morfologik_cache.clear()
     indexer_obj.index_cache.clear() 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'i':
         n = 1
     else:
-        n = 10
+        n = 50
 
     try:
         eof = False

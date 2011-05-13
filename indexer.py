@@ -281,7 +281,7 @@ class Indexer:
         '''morfologik wrapper to load_to_cache'''
         if words != []:
             filename = os.path.join(self.index_dir, 'morfologik', prefix)
-            self.load_to_cache(self.morfologik_cache, words, filename, morfologik = True)
+            self.load_to_cache(self.morfologik_cache, words, filename)
 
     def load_to_index_cache(self, words, prefix):
         '''index wrapper to load_to_cache'''
@@ -293,23 +293,15 @@ class Indexer:
         '''index nopos wrapper to load_to_cache'''
         if words != []:
             filename = os.path.join(self.index_dir, "%s.nopos" % prefix)
-            self.load_to_cache(self.index_nopos_cache, words, filename, nopos = True)
+            self.load_to_cache(self.index_nopos_cache, words, filename)
 
-    def load_to_cache(self, cache, words, filename, morfologik = False, nopos = False):
+    def load_to_cache(self, cache, words, filename):
         '''Load the info about words from a file to a cache'''
         if os.path.exists(filename):
             dic = self.load(filename)
             for word in words:
                 if word in dic:
-                    if self.compressed and not morfologik:
-                        if nopos:
-                            posting = Indexer.dedifferentiate_posting(dic[word], nopos = True)
-                        else:
-                            posting = Indexer.dedifferentiate_posting(dic[word])
-
-                    else:
-                        posting = dic[word]
-                    cache[word] = posting
+                    cache[word] = dic[word]
 
     def lemmatize(self, word):
         """Lemmatize a word"""
@@ -352,16 +344,24 @@ class Indexer:
     def get_title(self, article_number):
         """Gets a title from a marshalled file"""
         return self.titles[article_number - 1]
-
+    
     def get_positional_posting(self, word):
-        """Gets a positional posting for a given word"""
-        for doc in self.index_cache.get(word, []):
-            yield(doc)
-
+        """Gets a document posting with positions for a given word"""
+        if self.compressed:
+            posting = Indexer.dedifferentiate_posting(self.index_cache.get(word, []))
+        else:
+            posting = self.index_nopos_cache.get(word, [])
+        for doc in posting:
+            yield doc
+    
     def get_posting(self, word):
-        """Gets a document posting for a given word"""
-        for doc in self.index_nopos_cache.get(word, []):
-            yield(doc)
+        """Gets a document posting without positions for a given word"""
+        if self.compressed:
+            posting = Indexer.dedifferentiate_posting(self.index_nopos_cache.get(word, []), nopos = True)
+        else:
+            posting = self.index_nopos_cache.get(word, [])
+        for doc in posting:
+            yield doc
 
 def main():
     """Does some indexer testing"""
