@@ -368,13 +368,13 @@ def main():
     """Does some indexer testing"""
 
     indexer = Indexer(compressed = True, debug = True, prefix_len = 5)
-    #indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt',
+    indexer.create_index('data/wikipedia_dla_wyszukiwarek.txt',
+       'data/morfologik_do_wyszukiwarek.txt')
     #indexer.create_index('data/wiki100k',
-    #   'data/morfologik_do_wyszukiwarek.txt')
-    indexer.load_to_index_cache('w', 'w')
-    indexer.load_to_index_nopos_cache('w', 'w')
-    print(list(indexer.get_positional_posting('w')))
-    print(list(indexer.get_posting('w')))
+    #indexer.load_to_index_cache('w', 'w')
+    #indexer.load_to_index_nopos_cache('w', 'w')
+    #print(list(indexer.get_positional_posting('w')))
+    #print(list(indexer.get_posting('w')))
 
 if __name__ == "__main__":
     main()
