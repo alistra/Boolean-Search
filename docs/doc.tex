@@ -31,10 +31,8 @@ Tryb interaktywny wywołuje się poleceniem \texttt{boolsearch.py i}. W trybie i
 \subsection{Tworzenie indeksu}
 Na początku wczytujemy dane do morfologika, tworząc z nich słownik. Następnie proces tworzenia indeksu przebiega w kilku fazach. Indeks jest tworzony w podkatalogu \texttt{index}.
 
-\textbf{Co z kompresją?}
-
 \subsubsection{Faza zbierania informacji}
-Przechodzimy przez plik z danymi wiersz po wierszu, zapamiętując numer dokumentu, którego wiersze analizujemy. Numery i tytuły dokumentów zapisywane są do pliku \texttt{TITLES}. Wiersz rozbijamy na słowa, pamiętając pozycję słowa w dokumencie, a ze słów -- przy pomocy morfologika -- tworzymy jego znormalizowane formy. Dla każdej znormalizowanej formy słowa zapisujemy do pliku \texttt{WORDS} wiersz: słowo, numer dokumentu, pozycja słowa w dokumencie.
+Przechodzimy przez plik z danymi wiersz po wierszu, zapamiętując numer dokumentu, którego wiersze analizujemy. Numery i tytuły dokumentów zapisywane są do pliku \texttt{TITLES}. Wiersz rozbijamy na słowa, pamiętając pozycję słowa w dokumencie, a ze słów -- przy pomocy morfologika -- tworzymy jego znormalizowane formy, które odpowiednio stemmujemy lub nie. Stemming polega na odcięciu jednej z wyliczonych końcówek. Dla każdej znormalizowanej formy słowa zapisujemy do pliku \texttt{WORDS} wiersz: słowo, numer dokumentu, pozycja słowa w dokumencie.
 
 \subsubsection{Faza sortowania}
 Po przejściu przez cały plik z danymi sortujemy stabilnie plik \texttt{WORDS} po pierwszym elemencie, czyli po znormalizowanej formie słowa. Stabilność zagwarantuje nam dobrą kolejność numerów dokumentów i pozycji w dokumencie. Wynik sortowania zapisujemy w pliku \texttt{WORDS.sorted}.
@@ -47,7 +45,7 @@ LC_ALL=C sort -T. -k1,1 -s WORDS > WORDS.sorted
 \subsubsection{Faza tworzenia indeksu}
 Następnie przechodzimy przez posortowany plik \texttt{WORDS.sorted} i parsując każdy wiersz, dodajemy go do odpowiedniego słownika. Parsowanie polega po prostu na odczytaniu trzech pól wiersza: słowa, dokumentu i pozycji.
 
-Słownik jest indeksem wszystkich słów, których pierwsze trzy litery są takie same. Słowniki te kolejno zapisujemy na dysk przy pomocy biblioteki \texttt{marshal} służącej do serializacji obiektów Pythona. Dzięki sortowaniu każdy słownik będziemy otwierali do zapisu tylko raz, aż się się skończy jego prefiks. 
+Słownik jest indeksem wszystkich słów, których pierwsze pięć (lub odpowiednio ustawiona liczba) liter jest taka sama. Słowniki te kolejno zapisujemy na dysk przy pomocy biblioteki \texttt{marshal} służącej do serializacji obiektów Pythona i odpowiednio gzipujemy i kodujemy różnicowo, jeżeli opcja kopresji jest włączona. Dzięki sortowaniu każdy słownik będziemy otwierali do zapisu tylko raz, aż się się skończy jego prefiks. Zapisujemy dla każdego prefiksu wersje słownika pozycyjną i niepozycyjną.
 
 \subsubsection{Faza tworzenia indeksu morfologika}
 W ten sam sposób sortujemy plik z danymi morfologika i indeksujemy do trzyliterowych słowników, aby potem móc szybko normalizować słowa.
