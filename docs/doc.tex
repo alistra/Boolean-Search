@@ -48,7 +48,7 @@ Następnie przechodzimy przez posortowany plik \texttt{WORDS.sorted} i parsując
 Słownik jest indeksem wszystkich słów, których pierwsze pięć (lub odpowiednio ustawiona liczba) liter jest taka sama. Słowniki te kolejno zapisujemy na dysk przy pomocy biblioteki \texttt{marshal} służącej do serializacji obiektów Pythona i odpowiednio gzipujemy i kodujemy różnicowo, jeżeli opcja kopresji jest włączona. Dzięki sortowaniu każdy słownik będziemy otwierali do zapisu tylko raz, aż się się skończy jego prefiks. Zapisujemy dla każdego prefiksu wersje słownika pozycyjną i niepozycyjną.
 
 \subsubsection{Faza tworzenia indeksu morfologika}
-W ten sam sposób sortujemy plik z danymi morfologika i indeksujemy do trzyliterowych słowników, aby potem móc szybko normalizować słowa.
+W ten sam sposób sortujemy plik z danymi morfologika i indeksujemy do pięcioliterowych słowników, aby potem móc szybko normalizować słowa.
 
 \subsection{Wyszukiwanie}
 Wyszukiwarka w formie wsadowej po wczytaniu wszystkich zapytań gromadzi z nich słowa, grupując po 3-literowym prefiksie. Dla każdego prefiksu jest otwierany plik odpowiadający za słowa z tym prefiksem. Z tego pliku dodawane są szukane słowa do słownika w pamięci. Tak samo obsługiwane jest pobieranie informacji z morfologika.
@@ -90,15 +90,14 @@ handle.write("text")
 \end{verbatim}
 
 \section{Opis testów}
-Czasy testów podanych na KNO i czas indeksowania, wraz z informacją o użytych komputerach, podane są w tabelce:
+Zostały wykorzystane testy podane na KNO oraz komputer z procesorem Intel Core 2 Duo 2.4 GHz. Uzyskano następujące czasy:
 \begin{center}
-\begin{tabular}{|c|c|c|c|}
+\begin{tabular}{|c|c|}
 \hline
-Nazwa & AMD Athlon 64 X2 4200+ & Intel C2D 2.4GHz & Intel C2D 2.8GHz \\ \hline
-indeksowanie & ? & ? & ? \\ \hline
-pytania\_and\_dla\_IR.txt & ? & 6m48s & ? \\ \hline
-pytania\_or\_dla\_IR.txt & ? & 12m06s & ? \\ \hline
-pytania\_frazowe.txt & ? & 19m27s & ? \\ \hline
+Nazwa & Czas \\ \hline
+pytania\_and\_dla\_IR.txt & 6m48s \\ \hline
+pytania\_or\_dla\_IR.txt & 12m06s \\ \hline
+pytania\_frazowe.txt & 19m27s \\ \hline
 \end{tabular}
 \end{center}
 
